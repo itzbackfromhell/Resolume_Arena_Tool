@@ -10,6 +10,7 @@ from .core.file_watcher import watch_folder
 from .core.models import ProcessingOptions, ResolumeConfig
 from .core.naming import build_output_path
 from .core.presets import load_presets, options_from_preset
+from .core.rembg_runtime import rembg_healthcheck, runtime_summary
 from .core.resolume_api import ResolumeClient
 
 DEFAULT_PRESET_PATH = Path(__file__).resolve().parents[2] / "presets" / "defaults.json"
@@ -115,6 +116,16 @@ def cmd_resolume(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_rembg_check(args: argparse.Namespace) -> int:
+    print(f"Runtime: {runtime_summary()}")
+    try:
+        print(rembg_healthcheck(args.model))
+    except Exception as exc:
+        print(f"rembg check failed: {exc}")
+        return 1
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="resolume-alpha")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -138,6 +149,10 @@ def build_parser() -> argparse.ArgumentParser:
     watch.add_argument("--interval", type=float, default=2.0)
     _add_options(watch)
     watch.set_defaults(func=cmd_watch)
+
+    rembg = sub.add_parser("rembg-check", help="Test optional rembg backend and model session.")
+    rembg.add_argument("--model", default="u2net")
+    rembg.set_defaults(func=cmd_rembg_check)
 
     resolume = sub.add_parser("resolume", help="Test local Resolume webserver connectivity.")
     resolume.add_argument("--host", default="127.0.0.1")
