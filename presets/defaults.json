@@ -1,0 +1,46 @@
+{
+  "clean": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "fit_mode": "none",
+    "output_format": "png"
+  },
+  "hard_cut": {
+    "alpha_threshold": 32,
+    "feather_radius": 0.0,
+    "alpha_gamma": 1.2,
+    "despill_strength": 0.15,
+    "fit_mode": "none",
+    "output_format": "png"
+  },
+  "soft_edge": {
+    "alpha_threshold": 4,
+    "feather_radius": 1.5,
+    "alpha_gamma": 0.95,
+    "despill_strength": 0.45,
+    "fit_mode": "none",
+    "output_format": "png"
+  },
+  "resolume_1080p": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
+  },
+  "resolume_4k": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "fit_mode": "contain",
+    "canvas_width": 3840,
+    "canvas_height": 2160,
+    "output_format": "png"
+  }
+}
