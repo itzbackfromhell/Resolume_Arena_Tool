@@ -33,6 +33,7 @@ class ProcessingJob:
     input_path: Path
     output_dir: Path
     options: ProcessingOptions
+    open_output_after_export: bool = True
 
 
 class AlphaDropperApp(tk.Tk):
@@ -41,8 +42,8 @@ class AlphaDropperApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Resolume Alpha Dropper")
-        self.geometry("1160x740")
-        self.minsize(1020, 660)
+        self.geometry("1160x760")
+        self.minsize(1020, 680)
 
         self.log_queue: queue.Queue[object] = queue.Queue()
         self.worker: threading.Thread | None = None
@@ -67,6 +68,7 @@ class AlphaDropperApp(tk.Tk):
         self.height_var = tk.IntVar(value=1080)
         self.format_var = tk.StringVar(value="png")
         self.overwrite_var = tk.BooleanVar(value=False)
+        self.open_after_export_var = tk.BooleanVar(value=True)
         self.status_var = tk.StringVar(value="Ready")
         self.input_status_var = tk.StringVar(value="No input selected.")
 
@@ -182,7 +184,8 @@ class AlphaDropperApp(tk.Tk):
         ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.width_var, width=8).grid(row=1, column=1, sticky="w", pady=4)
         ttk.Label(panel, text="Height").grid(row=1, column=2, sticky="w", pady=4)
         ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.height_var, width=8).grid(row=1, column=3, sticky="w", pady=4)
-        ttk.Checkbutton(panel, text="Overwrite", variable=self.overwrite_var).grid(row=2, column=0, columnspan=4, sticky="w", pady=(4, 0))
+        ttk.Checkbutton(panel, text="Overwrite", variable=self.overwrite_var).grid(row=2, column=0, sticky="w", pady=(4, 0))
+        ttk.Checkbutton(panel, text="Open folder after export", variable=self.open_after_export_var).grid(row=2, column=1, columnspan=3, sticky="w", pady=(4, 0))
 
     def _build_action_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Actions", padding=10)
@@ -192,8 +195,10 @@ class AlphaDropperApp(tk.Tk):
 
         self.preview_button = ttk.Button(panel, text="Preview", command=self._refresh_preview)
         self.preview_button.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=3)
-        self.run_button = ttk.Button(panel, text="Process", command=self._start_processing)
-        self.run_button.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=3)
+        self.export_button = ttk.Button(panel, text="Export", command=self._start_processing)
+        self.export_button.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=3)
+        # Keep the old attribute name because the worker-enable logic already uses it.
+        self.run_button = self.export_button
         ttk.Button(panel, text="Open output", command=self._open_output_folder).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=3)
         ttk.Button(panel, text="Clear log", command=self._clear_log).grid(row=1, column=1, sticky="ew", padx=(4, 0), pady=3)
 
@@ -314,7 +319,13 @@ class AlphaDropperApp(tk.Tk):
         if not input_path.exists():
             return None
         output_dir = Path(output_raw).expanduser() if output_raw else Path.cwd() / "output"
-        return ProcessingJob(mode=self.mode_var.get(), input_path=input_path, output_dir=output_dir, options=self._processing_options())
+        return ProcessingJob(
+            mode=self.mode_var.get(),
+            input_path=input_path,
+            output_dir=output_dir,
+            options=self._processing_options(),
+            open_output_after_export=bool(self.open_after_export_var.get()),
+        )
 
     def _preview_source(self, *_args: object) -> Path | None:
         raw = clean_path_text(self.input_var.get())
@@ -378,7 +389,7 @@ class AlphaDropperApp(tk.Tk):
 
     def _start_processing(self, *_args: object) -> None:
         if self.worker and self.worker.is_alive():
-            messagebox.showinfo("Busy", "Processing is already running.")
+            messagebox.showinfo("Busy", "Export is already running.")
             return
         job = self._current_job()
         if job is None:
@@ -392,7 +403,7 @@ class AlphaDropperApp(tk.Tk):
             return
 
         self.run_button.configure(state=tk.DISABLED)
-        self.status_var.set("Processing...")
+        self.status_var.set("Exporting...")
         self.worker = threading.Thread(target=self._process_worker, args=(job,), daemon=True)
         self.worker.start()
 
@@ -403,10 +414,12 @@ class AlphaDropperApp(tk.Tk):
                 output_path = build_output_path(job.input_path, job.output_dir, suffix=job.options.normalized_suffix(), extension=job.options.output_format, overwrite=job.options.overwrite)
                 result = process_single(job.input_path, output_path, job.options, on_progress=self.log_queue.put)
                 self.last_output_path = result.output_path
-                self.log_queue.put(f"DONE {result.output_path} ({result.width}x{result.height})")
+                self.log_queue.put(f"EXPORTED {result.output_path} ({result.width}x{result.height})")
             else:
                 summary = process_directory(job.input_path, job.output_dir, job.options, on_progress=self.log_queue.put)
-                self.log_queue.put(f"DONE processed={summary.processed} failed={summary.failed} skipped={summary.skipped}")
+                self.log_queue.put(f"EXPORTED processed={summary.processed} failed={summary.failed} skipped={summary.skipped}")
+            if job.open_output_after_export:
+                self.log_queue.put(("open_output", str(job.output_dir)))
         except Exception as exc:
             self.log_queue.put(f"ERROR {exc}")
         finally:
@@ -433,14 +446,15 @@ class AlphaDropperApp(tk.Tk):
                         self.preview_button.configure(state=tk.NORMAL)
                         self.status_var.set("Preview failed")
                         self._log(f"PREVIEW ERROR {error}")
+                elif isinstance(message, tuple) and message[0] == "open_output":
+                    self._open_folder_path(Path(str(message[1])))
                 else:
                     self._log(str(message))
         except queue.Empty:
             pass
         self.after(100, self._drain_log_queue)
 
-    def _open_output_folder(self, *_args: object) -> None:
-        path = Path(clean_path_text(self.output_var.get()) or str(Path.cwd() / "output")).expanduser()
+    def _open_folder_path(self, path: Path) -> None:
         path.mkdir(parents=True, exist_ok=True)
         if sys.platform.startswith("win"):
             os.startfile(path)  # type: ignore[attr-defined]
@@ -448,6 +462,10 @@ class AlphaDropperApp(tk.Tk):
             subprocess.Popen(["open", str(path)])
         else:
             subprocess.Popen(["xdg-open", str(path)])
+
+    def _open_output_folder(self, *_args: object) -> None:
+        path = Path(clean_path_text(self.output_var.get()) or str(Path.cwd() / "output")).expanduser()
+        self._open_folder_path(path)
 
     def _log(self, message: str) -> None:
         self.log_text.insert(tk.END, message + "\n")
