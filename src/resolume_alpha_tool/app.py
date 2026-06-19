@@ -92,12 +92,8 @@ class AlphaDropperApp(tk.Tk):
         header = ttk.Frame(root)
         header.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 10))
         header.columnconfigure(0, weight=1)
-        ttk.Label(header, text="Resolume Alpha Dropper", font=("Segoe UI", 18, "bold")).grid(
-            row=0, column=0, sticky="w"
-        )
-        ttk.Label(header, text="Local transparent asset prep for Resolume Arena/Avenue.").grid(
-            row=1, column=0, sticky="w"
-        )
+        ttk.Label(header, text="Resolume Alpha Dropper", font=("Segoe UI", 18, "bold")).grid(row=0, column=0, sticky="w")
+        ttk.Label(header, text="Local transparent asset prep for Resolume Arena/Avenue.").grid(row=1, column=0, sticky="w")
         ttk.Label(header, textvariable=self.status_var).grid(row=0, column=1, rowspan=2, sticky="e")
 
         left = ttk.Frame(root)
@@ -123,20 +119,8 @@ class AlphaDropperApp(tk.Tk):
     def _build_mode_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Mode", padding=10)
         panel.grid(row=0, column=0, sticky="ew", pady=(0, 8))
-        ttk.Radiobutton(
-            panel,
-            text="Single image",
-            variable=self.mode_var,
-            value="single",
-            command=self._on_input_changed,
-        ).pack(side=tk.LEFT)
-        ttk.Radiobutton(
-            panel,
-            text="Batch folder",
-            variable=self.mode_var,
-            value="batch",
-            command=self._on_input_changed,
-        ).pack(side=tk.LEFT, padx=(12, 0))
+        ttk.Radiobutton(panel, text="Single image", variable=self.mode_var, value="single", command=self._on_input_changed).pack(side=tk.LEFT)
+        ttk.Radiobutton(panel, text="Batch folder", variable=self.mode_var, value="batch", command=self._on_input_changed).pack(side=tk.LEFT, padx=(12, 0))
 
     def _build_path_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Paths", padding=10)
@@ -146,30 +130,22 @@ class AlphaDropperApp(tk.Tk):
         ttk.Label(panel, text="Input").grid(row=0, column=0, sticky="w", padx=(0, 8), pady=4)
         self.input_entry = ttk.Entry(panel, textvariable=self.input_var, width=46)
         self.input_entry.grid(row=0, column=1, sticky="ew", pady=4)
-        self.input_entry.bind("<Return>", lambda _event: self._on_input_changed())
-        self.input_entry.bind("<FocusOut>", lambda _event: self._on_input_changed())
+        self.input_entry.bind("<Return>", self._on_input_changed)
+        self.input_entry.bind("<FocusOut>", self._on_input_changed)
         ttk.Button(panel, text="File", command=self._browse_input_file).grid(row=0, column=2, padx=(8, 0))
         ttk.Button(panel, text="Folder", command=self._browse_input_folder).grid(row=0, column=3, padx=(6, 0))
 
         ttk.Label(panel, text="Output folder").grid(row=1, column=0, sticky="w", padx=(0, 8), pady=4)
         ttk.Entry(panel, textvariable=self.output_var, width=46).grid(row=1, column=1, sticky="ew", pady=4)
-        ttk.Button(panel, text="Browse", command=self._browse_output).grid(
-            row=1, column=2, columnspan=2, sticky="ew", padx=(8, 0)
-        )
-        ttk.Label(panel, textvariable=self.input_status_var, foreground="#555555", wraplength=500).grid(
-            row=2, column=0, columnspan=4, sticky="w", pady=(4, 0)
-        )
+        ttk.Button(panel, text="Browse", command=self._browse_output).grid(row=1, column=2, columnspan=2, sticky="ew", padx=(8, 0))
+        ttk.Label(panel, textvariable=self.input_status_var, foreground="#555555", wraplength=500).grid(row=2, column=0, columnspan=4, sticky="w", pady=(4, 0))
 
     def _build_preset_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Presets", padding=10)
         panel.grid(row=2, column=0, sticky="ew", pady=8)
         names = list(self.presets) or ["clean", "hard_cut", "soft_edge", "resolume_1080p", "resolume_4k"]
         for index, name in enumerate(names):
-            ttk.Button(
-                panel,
-                text=name.replace("_", " ").title(),
-                command=lambda n=name: self._apply_preset(n),
-            ).grid(row=index // 2, column=index % 2, sticky="ew", padx=4, pady=3)
+            ttk.Button(panel, text=name.replace("_", " ").title(), command=lambda n=name: self._apply_preset(n)).grid(row=index // 2, column=index % 2, sticky="ew", padx=4, pady=3)
         panel.columnconfigure(0, weight=1)
         panel.columnconfigure(1, weight=1)
 
@@ -179,46 +155,18 @@ class AlphaDropperApp(tk.Tk):
         for col in range(4):
             panel.columnconfigure(col, weight=1)
 
-        ttk.Checkbutton(
-            panel,
-            text="Remove background",
-            variable=self.remove_bg_var,
-            command=self._refresh_preview,
-        ).grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 8))
+        ttk.Checkbutton(panel, text="Remove background", variable=self.remove_bg_var, command=self._refresh_preview).grid(row=0, column=0, columnspan=4, sticky="w", pady=(0, 8))
         ttk.Label(panel, text="Model").grid(row=1, column=0, sticky="w")
-        ttk.Combobox(
-            panel,
-            textvariable=self.model_var,
-            values=["u2net", "u2netp", "isnet-general-use", "silueta", "birefnet-general"],
-            width=18,
-        ).grid(row=1, column=1, columnspan=3, sticky="ew")
+        ttk.Combobox(panel, textvariable=self.model_var, values=["u2net", "u2netp", "isnet-general-use", "silueta", "birefnet-general"], width=18).grid(row=1, column=1, columnspan=3, sticky="ew")
 
         self._spin(panel, "Threshold", self.threshold_var, 0, 255, 1, 2, 0)
         self._spin(panel, "Feather", self.feather_var, 0, 10, 0.1, 2, 2)
         self._spin(panel, "Gamma", self.gamma_var, 0.1, 4, 0.1, 3, 0)
         self._spin(panel, "Despill", self.despill_var, 0, 1, 0.05, 3, 2)
 
-    def _spin(
-        self,
-        parent: ttk.Frame,
-        label: str,
-        var: tk.Variable,
-        start: float,
-        stop: float,
-        step: float,
-        row: int,
-        col: int,
-    ) -> None:
+    def _spin(self, parent: ttk.Frame, label: str, var: tk.Variable, start: float, stop: float, step: float, row: int, col: int) -> None:
         ttk.Label(parent, text=label).grid(row=row, column=col, sticky="w", pady=4)
-        ttk.Spinbox(
-            parent,
-            from_=start,
-            to=stop,
-            increment=step,
-            textvariable=var,
-            width=8,
-            command=self._refresh_preview,
-        ).grid(row=row, column=col + 1, sticky="w", pady=4)
+        ttk.Spinbox(parent, from_=start, to=stop, increment=step, textvariable=var, width=8, command=self._refresh_preview).grid(row=row, column=col + 1, sticky="w", pady=4)
 
     def _build_export_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Export", padding=10)
@@ -227,27 +175,14 @@ class AlphaDropperApp(tk.Tk):
             panel.columnconfigure(col, weight=1)
 
         ttk.Label(panel, text="Fit").grid(row=0, column=0, sticky="w")
-        ttk.Combobox(
-            panel,
-            textvariable=self.fit_var,
-            values=["none", "contain", "cover", "stretch"],
-            width=10,
-        ).grid(row=0, column=1, sticky="w")
+        ttk.Combobox(panel, textvariable=self.fit_var, values=["none", "contain", "cover", "stretch"], width=10).grid(row=0, column=1, sticky="w")
         ttk.Label(panel, text="Format").grid(row=0, column=2, sticky="w")
-        ttk.Combobox(panel, textvariable=self.format_var, values=["png", "webp"], width=8).grid(
-            row=0, column=3, sticky="w"
-        )
+        ttk.Combobox(panel, textvariable=self.format_var, values=["png", "webp"], width=8).grid(row=0, column=3, sticky="w")
         ttk.Label(panel, text="Width").grid(row=1, column=0, sticky="w", pady=4)
-        ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.width_var, width=8).grid(
-            row=1, column=1, sticky="w", pady=4
-        )
+        ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.width_var, width=8).grid(row=1, column=1, sticky="w", pady=4)
         ttk.Label(panel, text="Height").grid(row=1, column=2, sticky="w", pady=4)
-        ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.height_var, width=8).grid(
-            row=1, column=3, sticky="w", pady=4
-        )
-        ttk.Checkbutton(panel, text="Overwrite", variable=self.overwrite_var).grid(
-            row=2, column=0, columnspan=4, sticky="w", pady=(4, 0)
-        )
+        ttk.Spinbox(panel, from_=1, to=16384, textvariable=self.height_var, width=8).grid(row=1, column=3, sticky="w", pady=4)
+        ttk.Checkbutton(panel, text="Overwrite", variable=self.overwrite_var).grid(row=2, column=0, columnspan=4, sticky="w", pady=(4, 0))
 
     def _build_action_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Actions", padding=10)
@@ -259,17 +194,11 @@ class AlphaDropperApp(tk.Tk):
         self.preview_button.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=3)
         self.run_button = ttk.Button(panel, text="Process", command=self._start_processing)
         self.run_button.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=3)
-        ttk.Button(panel, text="Open output", command=self._open_output_folder).grid(
-            row=1, column=0, sticky="ew", padx=(0, 4), pady=3
-        )
-        ttk.Button(panel, text="Clear log", command=self._clear_log).grid(
-            row=1, column=1, sticky="ew", padx=(4, 0), pady=3
-        )
+        ttk.Button(panel, text="Open output", command=self._open_output_folder).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=3)
+        ttk.Button(panel, text="Clear log", command=self._clear_log).grid(row=1, column=1, sticky="ew", padx=(4, 0), pady=3)
 
     def _build_preview_panel(self, parent: ttk.Frame) -> None:
-        ttk.Label(parent, text="Preview", font=("Segoe UI", 13, "bold")).grid(
-            row=0, column=0, columnspan=2, sticky="w", pady=(0, 6)
-        )
+        ttk.Label(parent, text="Preview", font=("Segoe UI", 13, "bold")).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 6))
         input_box = ttk.LabelFrame(parent, text="Input", padding=8)
         input_box.grid(row=1, column=0, sticky="nsew", padx=(0, 6))
         output_box = ttk.LabelFrame(parent, text="Processed", padding=8)
@@ -294,40 +223,31 @@ class AlphaDropperApp(tk.Tk):
 
     def _bind_preview_traces(self) -> None:
         self.input_var.trace_add("write", lambda *_: self._on_input_changed())
-        for var in (
-            self.threshold_var,
-            self.feather_var,
-            self.gamma_var,
-            self.despill_var,
-            self.fit_var,
-            self.width_var,
-            self.height_var,
-            self.format_var,
-        ):
+        for var in (self.threshold_var, self.feather_var, self.gamma_var, self.despill_var, self.fit_var, self.width_var, self.height_var, self.format_var):
             var.trace_add("write", lambda *_: self._refresh_preview())
 
-    def _browse_input_file(self) -> None:
+    def _browse_input_file(self, *_args: object) -> None:
         selected = filedialog.askopenfilename(title="Select image", filetypes=IMAGE_FILETYPES)
         if selected:
             self.mode_var.set("single")
             self.input_var.set(selected)
 
-    def _browse_input_folder(self) -> None:
+    def _browse_input_folder(self, *_args: object) -> None:
         selected = filedialog.askdirectory(title="Select input folder")
         if selected:
             self.mode_var.set("batch")
             self.input_var.set(selected)
 
-    def _browse_output(self) -> None:
+    def _browse_output(self, *_args: object) -> None:
         selected = filedialog.askdirectory(title="Select output folder")
         if selected:
             self.output_var.set(selected)
 
-    def _on_input_changed(self) -> None:
+    def _on_input_changed(self, *_args: object) -> None:
         self._update_input_status()
         self._refresh_preview()
 
-    def _update_input_status(self) -> None:
+    def _update_input_status(self, *_args: object) -> None:
         raw = clean_path_text(self.input_var.get())
         if not raw:
             self.input_status_var.set("No input selected.")
@@ -349,7 +269,7 @@ class AlphaDropperApp(tk.Tk):
             return
         self.input_status_var.set(f"Input path does not exist: {raw}")
 
-    def _apply_preset(self, name: str) -> None:
+    def _apply_preset(self, name: str, *_args: object) -> None:
         preset = self.presets.get(name)
         if not preset:
             self._log(f"WARN preset not found: {name}")
@@ -367,7 +287,7 @@ class AlphaDropperApp(tk.Tk):
         self.status_var.set(f"Preset loaded: {name}")
         self._refresh_preview()
 
-    def _options(self) -> ProcessingOptions:
+    def _options(self, *_args: object) -> ProcessingOptions:
         fit_mode = self.fit_var.get()
         width = int(self.width_var.get()) if fit_mode != "none" else None
         height = int(self.height_var.get()) if fit_mode != "none" else None
@@ -385,7 +305,7 @@ class AlphaDropperApp(tk.Tk):
             overwrite=bool(self.overwrite_var.get()),
         )
 
-    def _current_job(self) -> ProcessingJob | None:
+    def _current_job(self, *_args: object) -> ProcessingJob | None:
         input_raw = clean_path_text(self.input_var.get())
         output_raw = clean_path_text(self.output_var.get())
         if not input_raw:
@@ -394,25 +314,20 @@ class AlphaDropperApp(tk.Tk):
         if not input_path.exists():
             return None
         output_dir = Path(output_raw).expanduser() if output_raw else Path.cwd() / "output"
-        return ProcessingJob(
-            mode=self.mode_var.get(),
-            input_path=input_path,
-            output_dir=output_dir,
-            options=self._options(),
-        )
+        return ProcessingJob(mode=self.mode_var.get(), input_path=input_path, output_dir=output_dir, options=self._options())
 
-    def _preview_source(self) -> Path | None:
+    def _preview_source(self, *_args: object) -> Path | None:
         raw = clean_path_text(self.input_var.get())
         if not raw:
             return None
         return resolve_preview_source(Path(raw).expanduser())
 
-    def _refresh_preview(self) -> None:
+    def _refresh_preview(self, *_args: object) -> None:
         self.preview_token += 1
         token = self.preview_token
         self.after(200, lambda: self._start_preview(token))
 
-    def _start_preview(self, token: int) -> None:
+    def _start_preview(self, token: int, *_args: object) -> None:
         if token != self.preview_token:
             return
         source = self._preview_source()
@@ -434,11 +349,7 @@ class AlphaDropperApp(tk.Tk):
         options = self._options()
         self.preview_button.configure(state=tk.DISABLED)
         self.status_var.set("Rendering preview...")
-        self.preview_worker = threading.Thread(
-            target=self._preview_worker_fn,
-            args=(source, token, options),
-            daemon=True,
-        )
+        self.preview_worker = threading.Thread(target=self._preview_worker_fn, args=(source, token, options), daemon=True)
         self.preview_worker.start()
 
     def _preview_worker_fn(self, source: Path, token: int, options: ProcessingOptions) -> None:
@@ -465,7 +376,7 @@ class AlphaDropperApp(tk.Tk):
                     canvas.paste((245, 245, 245, 255), (x, y, min(x + tile, size[0]), min(y + tile, size[1])))
         return canvas
 
-    def _start_processing(self) -> None:
+    def _start_processing(self, *_args: object) -> None:
         if self.worker and self.worker.is_alive():
             messagebox.showinfo("Busy", "Processing is already running.")
             return
@@ -489,13 +400,7 @@ class AlphaDropperApp(tk.Tk):
         try:
             job.output_dir.mkdir(parents=True, exist_ok=True)
             if job.mode == "single":
-                output_path = build_output_path(
-                    job.input_path,
-                    job.output_dir,
-                    suffix=job.options.normalized_suffix(),
-                    extension=job.options.output_format,
-                    overwrite=job.options.overwrite,
-                )
+                output_path = build_output_path(job.input_path, job.output_dir, suffix=job.options.normalized_suffix(), extension=job.options.output_format, overwrite=job.options.overwrite)
                 result = process_single(job.input_path, output_path, job.options, on_progress=self.log_queue.put)
                 self.last_output_path = result.output_path
                 self.log_queue.put(f"DONE {result.output_path} ({result.width}x{result.height})")
@@ -507,7 +412,7 @@ class AlphaDropperApp(tk.Tk):
         finally:
             self.log_queue.put("enable_button")
 
-    def _drain_log_queue(self) -> None:
+    def _drain_log_queue(self, *_args: object) -> None:
         try:
             while True:
                 message = self.log_queue.get_nowait()
@@ -534,7 +439,7 @@ class AlphaDropperApp(tk.Tk):
             pass
         self.after(100, self._drain_log_queue)
 
-    def _open_output_folder(self) -> None:
+    def _open_output_folder(self, *_args: object) -> None:
         path = Path(clean_path_text(self.output_var.get()) or str(Path.cwd() / "output")).expanduser()
         path.mkdir(parents=True, exist_ok=True)
         if sys.platform.startswith("win"):
@@ -548,7 +453,7 @@ class AlphaDropperApp(tk.Tk):
         self.log_text.insert(tk.END, message + "\n")
         self.log_text.see(tk.END)
 
-    def _clear_log(self) -> None:
+    def _clear_log(self, *_args: object) -> None:
         self.log_text.delete("1.0", tk.END)
 
 
