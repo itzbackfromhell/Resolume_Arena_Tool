@@ -9,33 +9,28 @@ from PIL import Image, ImageChops, ImageEnhance, ImageFilter
 
 from .exceptions import DependencyMissingError, ProcessingError
 from .models import ProcessingOptions, ProcessResult
+from .rembg_runtime import create_rembg_session, import_rembg_symbols
 
 
 @lru_cache(maxsize=8)
 def _get_rembg_session(model_name: str):  # type: ignore[no-untyped-def]
     """Create and cache a rembg session for batch performance."""
 
-    try:
-        from rembg import new_session  # type: ignore
-    except Exception as exc:  # pragma: no cover - optional dependency path
-        raise DependencyMissingError(
-            "rembg is not installed. Install with: pip install -e \".[rembg]\""
-        ) from exc
-    return new_session(model_name)
+    return create_rembg_session(model_name)
 
 
 def _remove_background_with_rembg(image: Image.Image, model_name: str) -> Image.Image:
-    try:
-        from rembg import remove  # type: ignore
-    except Exception as exc:  # pragma: no cover - optional dependency path
-        raise DependencyMissingError(
-            "rembg is not installed. Install with: pip install -e \".[rembg]\""
-        ) from exc
-
+    _new_session, remove = import_rembg_symbols()
     session = _get_rembg_session(model_name)
-    output = remove(image.convert("RGBA"), session=session)
+    try:
+        output = remove(image.convert("RGBA"), session=session)
+    except Exception as exc:  # pragma: no cover - depends on optional runtime state
+        raise ProcessingError(
+            "rembg failed while removing the background. "
+            f"Model: {model_name}. Original error: {exc}"
+        ) from exc
     if not isinstance(output, Image.Image):  # pragma: no cover - defensive guard
-        raise ProcessingError("rembg returned an unexpected output type")
+        raise ProcessingError(f"rembg returned an unexpected output type: {type(output)!r}")
     return output.convert("RGBA")
 
 
@@ -77,7 +72,7 @@ def _cleanup_transparent_rgb(image: Image.Image) -> Image.Image:
     """Set fully transparent pixels to black to avoid fringe garbage."""
 
     rgba = image.convert("RGBA")
-    r, g, b, a = rgba.split()
+    _r, _g, _b, a = rgba.split()
     zero_mask = a.point(lambda value: 255 if value == 0 else 0)
     black = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
     return Image.composite(black, rgba, zero_mask).convert("RGBA")
@@ -158,6 +153,11 @@ def save_image(image: Image.Image, output_path: Path, options: ProcessingOptions
         image.save(output_path, format="WEBP", quality=options.webp_quality, lossless=False)
     else:
         raise ProcessingError(f"Unsupported output format: {options.output_format}")
+
+    if not output_path.exists():
+        raise ProcessingError(f"Image save reported success, but output was not created: {output_path}")
+    if output_path.stat().st_size <= 0:
+        raise ProcessingError(f"Output file is empty: {output_path}")
 
 
 def process_file(input_path: Path, output_path: Path, options: ProcessingOptions) -> ProcessResult:
