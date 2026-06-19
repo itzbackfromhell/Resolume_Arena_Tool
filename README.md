@@ -1,4 +1,4 @@
-# Resolume Alpha Dropper
+﻿# Resolume Alpha Dropper
 
 **Resolume Alpha Dropper** is a local-first Windows-friendly toolkit for creating transparent image assets for Resolume Arena/Avenue workflows.
 
@@ -54,7 +54,7 @@ cd Resolume_Arena_Tool
 ### 2. Create venv
 
 ```powershell
-py -3.11 -m venv .venv
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 ```
@@ -76,7 +76,7 @@ pip install -e ".[rembg]"
 With developer tooling:
 
 ```powershell
-pip install -e ".[dev,rembg]"
+pip install -e ".[dev]"
 ```
 
 ### 4. Launch GUI
@@ -176,3 +176,4 @@ python -m ruff check .
 ## License
 
 MIT
+
