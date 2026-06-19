@@ -287,7 +287,7 @@ class AlphaDropperApp(tk.Tk):
         self.status_var.set(f"Preset loaded: {name}")
         self._refresh_preview()
 
-    def _options(self, *_args: object) -> ProcessingOptions:
+    def _processing_options(self, *_args: object) -> ProcessingOptions:
         fit_mode = self.fit_var.get()
         width = int(self.width_var.get()) if fit_mode != "none" else None
         height = int(self.height_var.get()) if fit_mode != "none" else None
@@ -314,7 +314,7 @@ class AlphaDropperApp(tk.Tk):
         if not input_path.exists():
             return None
         output_dir = Path(output_raw).expanduser() if output_raw else Path.cwd() / "output"
-        return ProcessingJob(mode=self.mode_var.get(), input_path=input_path, output_dir=output_dir, options=self._options())
+        return ProcessingJob(mode=self.mode_var.get(), input_path=input_path, output_dir=output_dir, options=self._processing_options())
 
     def _preview_source(self, *_args: object) -> Path | None:
         raw = clean_path_text(self.input_var.get())
@@ -346,7 +346,7 @@ class AlphaDropperApp(tk.Tk):
             self.input_preview_label.configure(text=f"Input preview failed: {exc}", image="")
             return
 
-        options = self._options()
+        options = self._processing_options()
         self.preview_button.configure(state=tk.DISABLED)
         self.status_var.set("Rendering preview...")
         self.preview_worker = threading.Thread(target=self._preview_worker_fn, args=(source, token, options), daemon=True)
