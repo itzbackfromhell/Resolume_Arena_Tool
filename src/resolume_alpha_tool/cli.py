@@ -21,7 +21,7 @@ DEFAULT_PRESET_PATH = default_preset_path()
 
 def _add_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--remove-bg", action="store_true", help="Use local rembg backend.")
-    parser.add_argument("--model", default="u2net", help="rembg model name.")
+    parser.add_argument("--model", default=None, help="rembg model name.")
     parser.add_argument("--preset", help="Preset name from presets/defaults.json.")
     parser.add_argument("--alpha-threshold", type=int, default=None)
     parser.add_argument("--feather", type=float, default=None)
@@ -53,7 +53,7 @@ def _build_options(args: argparse.Namespace) -> ProcessingOptions:
 
     updates = {
         "remove_background": args.remove_bg or options.remove_background,
-        "rembg_model": args.model or options.rembg_model,
+        "rembg_model": args.model if args.model is not None else options.rembg_model,
         "alpha_threshold": args.alpha_threshold if args.alpha_threshold is not None else options.alpha_threshold,
         "feather_radius": args.feather if args.feather is not None else options.feather_radius,
         "alpha_gamma": args.gamma if args.gamma is not None else options.alpha_gamma,
