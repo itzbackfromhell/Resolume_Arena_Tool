@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from collections.abc import Callable
+from contextlib import suppress
 from pathlib import Path
 
 from .batch import process_directory
@@ -38,10 +39,8 @@ def watch_folder(
             on_progress=on_progress,
         )
         for result in summary.results:
-            try:
+            with suppress(FileNotFoundError):
                 seen[result.input_path] = result.input_path.stat().st_mtime
-            except FileNotFoundError:
-                pass
 
         cycles += 1
         if stop_after_cycles is not None and cycles >= stop_after_cycles:
