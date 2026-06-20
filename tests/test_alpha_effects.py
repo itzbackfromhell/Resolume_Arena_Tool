@@ -4,6 +4,11 @@ from resolume_alpha_tool.core.alpha_processor import process_image_object
 from resolume_alpha_tool.core.models import ProcessingOptions
 
 
+def _visible_pixel_count(image: Image.Image) -> int:
+    histogram = image.getchannel("A").histogram()
+    return sum(histogram[1:])
+
+
 def test_auto_crop_with_padding_trims_transparent_bounds() -> None:
     image = Image.new("RGBA", (10, 10), (0, 0, 0, 0))
     image.paste((255, 0, 0, 255), (4, 4, 6, 6))
@@ -42,9 +47,7 @@ def test_outline_adds_visible_pixels_around_alpha() -> None:
     )
 
     assert outlined.getchannel("A").getbbox() is not None
-    assert sum(1 for value in outlined.getchannel("A").getdata() if value) > sum(
-        1 for value in plain.getchannel("A").getdata() if value
-    )
+    assert _visible_pixel_count(outlined) > _visible_pixel_count(plain)
 
 
 def test_invert_alpha_flips_mask() -> None:
