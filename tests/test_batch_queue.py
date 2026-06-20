@@ -49,6 +49,18 @@ def test_process_files_handles_explicit_retry_queue(tmp_path: Path) -> None:
     assert summary.results[0].input_path == source.resolve()
 
 
+def test_process_files_collects_missing_retry_inputs(tmp_path: Path) -> None:
+    output_dir = tmp_path / "output"
+    missing = tmp_path / "missing.png"
+
+    summary = process_files([missing], output_dir, ProcessingOptions(output_format="png"))
+
+    assert summary.processed == 0
+    assert summary.failed == 1
+    assert summary.skipped == 0
+    assert str(missing) in summary.errors[0]
+
+
 def test_failed_input_paths_extracts_paths() -> None:
     paths = failed_input_paths((r"C:\assets\bad.png: cannot decode image",))
     assert paths == (Path(r"C:\assets\bad.png"),)
