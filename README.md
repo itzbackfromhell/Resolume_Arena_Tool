@@ -2,7 +2,7 @@
 
 **Resolume Alpha Dropper** is a local-first Windows-friendly toolkit for creating transparent image assets for Resolume Arena/Avenue workflows.
 
-It removes backgrounds, cleans alpha edges, batch-processes folders, exports transparent PNG/WebP files, and can optionally talk to a local Resolume webserver endpoint. No paid cloud API is required.
+It removes backgrounds, cleans alpha edges, adds visual alpha effects, batch-processes folders, exports transparent PNG/WebP files, and can optionally talk to a local Resolume webserver endpoint. No paid cloud API is required.
 
 ## Core idea
 
@@ -10,6 +10,7 @@ It removes backgrounds, cleans alpha edges, batch-processes folders, exports tra
 image/folder in
   -> optional local background removal
   -> alpha cleanup / edge feather / matte despill
+  -> optional alpha effects: crop / padding / outline / glow / shadow
   -> transparent PNG/WebP export
   -> drag/import into Resolume
 ```
@@ -27,6 +28,13 @@ image/folder in
   - gamma correction
   - matte/despill cleanup
   - transparent-pixel RGB cleanup
+- Alpha effect controls:
+  - invert alpha
+  - auto-crop
+  - transparent padding
+  - outline
+  - glow
+  - shadow with X/Y offset
 - Batch folder processing, including optional recursive batch mode in the GUI.
 - Watch-folder mode for auto-processing new files.
 - CLI for automation and power users.
@@ -114,6 +122,12 @@ Single image:
 resolume-alpha remove input.jpg output --remove-bg --preset clean --overwrite
 ```
 
+Single image with effects:
+
+```powershell
+resolume-alpha remove input.png output --preset sticker_outline --auto-crop --padding 48 --outline 8
+```
+
 Batch folder:
 
 ```powershell
@@ -135,7 +149,7 @@ Short version:
 1. Select **File** or **Folder** input.
 2. Choose an **Output folder**.
 3. Pick or save a preset.
-4. Adjust cleanup/export settings.
+4. Adjust cleanup/effect/export settings.
 5. Use **Preview**.
 6. Click **Export**.
 7. Check progress and final summary.
