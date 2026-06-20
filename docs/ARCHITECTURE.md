@@ -4,6 +4,7 @@
 
 ```text
 GUI / CLI
+  -> queue scanner / report writer
   -> batch service
     -> alpha processor
       -> Pillow operations
@@ -20,6 +21,7 @@ GUI / CLI
 - Optional dependencies must fail with actionable messages.
 - Background-removal sessions are cached to keep batch processing fast.
 - Batch runs collect errors and continue.
+- Queue preview and report writing stay in core helpers so GUI behavior is testable.
 
 ## Main components
 
@@ -48,7 +50,23 @@ Responsible for:
 - generating output names
 - calling `process_file`
 - collecting batch summary/errors
+- processing explicit retry queues
 - supporting safe cancel checks for GUI batch runs
+
+### `batch_queue.py`
+
+Responsible for:
+
+- scanning planned single/batch exports
+- marking canonical outputs that will be skipped
+- extracting failed input paths from batch errors
+
+### `export_report.py`
+
+Responsible for:
+
+- building JSON-serializable export reports
+- writing timestamped export report files
 
 ### `cli.py`
 
