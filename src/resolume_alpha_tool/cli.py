@@ -12,9 +12,9 @@ from .core.models import ProcessingOptions, ResolumeConfig
 from .core.naming import build_output_path
 from .core.presets import load_presets, options_from_preset
 from .core.rembg_runtime import rembg_healthcheck, runtime_summary
-from .core.resources import default_preset_path, ensure_portable_dirs
 from .core.resolume_api import ResolumeClient
 from .core.resolume_profiles import PROFILES
+from .core.resources import default_preset_path, ensure_portable_dirs
 
 DEFAULT_PRESET_PATH = default_preset_path()
 
