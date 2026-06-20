@@ -7,14 +7,47 @@ Resolume Alpha Dropper is a local desktop tool. It does not download exports fro
 1. Choose **Single image** or **Batch folder**.
 2. Select an input with **File** or **Folder**.
 3. Choose an **Output folder**.
-4. Adjust alpha cleanup and export options.
-5. Use **Preview** to check the processed result.
-6. Click **Export**.
+4. Choose or create a preset.
+5. Adjust alpha cleanup and export options.
+6. Use **Preview** to check the processed result.
+7. Click **Export**.
+
+## Persistent GUI state
+
+The GUI saves its last-used state when an export starts and when the window closes:
+
+- input path
+- output folder
+- mode
+- selected preset
+- cleanup/export values
+- overwrite / recursive batch / open-folder settings
+- window geometry
+
+User settings are stored outside the repository in the per-user config directory.
+
+## Presets
+
+Bundled presets are loaded from `presets/defaults.json`.
+
+The GUI also supports user presets:
+
+- **Apply** loads the selected preset into the current controls.
+- **Save Current** stores the current controls as a user preset.
+- **Delete** removes user presets. Bundled presets are protected.
+- **Import** loads a JSON preset file.
+- **Export Selected** writes the active preset to a JSON file.
+
+A user preset can shadow a bundled preset with the same name. Deleting the user preset reveals the bundled preset again.
 
 ## Export behavior
 
 - Single-image export writes one PNG/WebP into the output folder.
 - Batch export writes one output file per supported image.
+- **Recursive batch** includes supported images in nested folders.
+- The progress bar updates as files are saved.
+- **Cancel** requests a safe stop. The current file may finish before the batch stops.
+- The summary line shows processed / failed / skipped counts after export.
 - The log shows `EXPORTED ...` after successful exports.
 - Enable **Open folder after export** to open Windows Explorer automatically after export.
 - **Open output** can be used any time to open the selected output folder manually.
