@@ -42,7 +42,7 @@ def process_files(
     """Process an explicit list of input files into one output directory."""
 
     target = ensure_dir(output_dir, create=True)
-    images = [ensure_file(path) for path in input_paths]
+    images = tuple(input_paths)
     results: list[ProcessResult] = []
     errors: list[str] = []
     skipped = 0
@@ -55,22 +55,23 @@ def process_files(
                 on_progress(f"CANCELLED batch export; skipped remaining={remaining}")
             break
         try:
-            canonical = canonical_output_path(image_path, target, options)
+            input_file = ensure_file(image_path)
+            canonical = canonical_output_path(input_file, target, options)
             if canonical.exists() and not options.overwrite:
                 skipped += 1
                 if on_progress:
                     on_progress(f"Skipped existing {canonical.name}")
                 continue
             output_path = build_output_path(
-                image_path,
+                input_file,
                 target,
                 suffix=options.normalized_suffix(),
                 extension=options.output_format,
                 overwrite=options.overwrite,
             )
             if on_progress:
-                on_progress(f"Processing {image_path.name}")
-            result = process_file(image_path, output_path, options)
+                on_progress(f"Processing {input_file.name}")
+            result = process_file(input_file, output_path, options)
             results.append(result)
             if on_progress:
                 on_progress(f"Saved {result.output_path.name}")
