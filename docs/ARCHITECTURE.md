@@ -4,13 +4,15 @@
 
 ```text
 GUI / CLI
+  -> resource resolver / diagnostics
   -> queue scanner / report writer
-  -> batch service
+  -> batch service / watch-folder service
     -> alpha processor
       -> Pillow operations
       -> optional rembg background removal
       -> alpha cleanup and visual effects
   -> output naming / validation
+  -> safe Resolume workflow profiles
   -> optional Resolume API client
 ```
 
@@ -22,6 +24,8 @@ GUI / CLI
 - Background-removal sessions are cached to keep batch processing fast.
 - Batch runs collect errors and continue.
 - Queue preview and report writing stay in core helpers so GUI behavior is testable.
+- Portable builds must resolve resources in both source checkouts and PyInstaller executables.
+- Resolume integration remains conservative: export assets safely, do not mutate Resolume projects blindly.
 
 ## Main components
 
@@ -68,9 +72,39 @@ Responsible for:
 - building JSON-serializable export reports
 - writing timestamped export report files
 
+### `file_watcher.py`
+
+Responsible for:
+
+- polling a folder without a watchdog dependency
+- processing only new or changed files
+- respecting safe stop/cancel callbacks
+
+### `resources.py`
+
+Responsible for:
+
+- resolving bundled resources in source and PyInstaller modes
+- resolving portable writable folders
+- creating expected `output/` and `logs/` folders
+
+### `diagnostics.py`
+
+Responsible for:
+
+- collecting runtime/package/path diagnostics
+- writing support JSON reports
+
+### `resolume_profiles.py`
+
+Responsible for:
+
+- defining safe output-oriented Resolume workflow profiles
+- avoiding unsafe Resolume project mutation
+
 ### `cli.py`
 
-Thin command layer. Converts user args into `ProcessingOptions`.
+Thin command layer. Converts user args into `ProcessingOptions` and exposes healthcheck/profile/diagnostics commands.
 
 ### `app.py`
 
