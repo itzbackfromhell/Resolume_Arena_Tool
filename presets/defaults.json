@@ -81,5 +81,68 @@
     "canvas_width": 1920,
     "canvas_height": 1080,
     "output_format": "png"
+  },
+  "artist_sticker_bold": {
+    "alpha_threshold": 18,
+    "feather_radius": 0.3,
+    "alpha_gamma": 1.08,
+    "despill_strength": 0.2,
+    "auto_crop": true,
+    "padding": 64,
+    "outline_width": 12,
+    "fit_mode": "none",
+    "output_format": "png"
+  },
+  "artist_logo_clean_1080p": {
+    "alpha_threshold": 6,
+    "feather_radius": 0.5,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.25,
+    "auto_crop": true,
+    "padding": 72,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
+  },
+  "artist_dark_stage_glow": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.4,
+    "auto_crop": true,
+    "padding": 96,
+    "glow_radius": 24.0,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
+  },
+  "artist_shadow_poster": {
+    "alpha_threshold": 10,
+    "feather_radius": 0.7,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "auto_crop": true,
+    "padding": 96,
+    "shadow_radius": 20.0,
+    "shadow_offset_x": 18,
+    "shadow_offset_y": 18,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
+  },
+  "artist_web_preview": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "auto_crop": true,
+    "padding": 48,
+    "fit_mode": "contain",
+    "canvas_width": 1280,
+    "canvas_height": 720,
+    "output_format": "webp"
   }
 }
