@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 
 from .alpha_processor import process_file
+from .batch_queue import canonical_output_path, scan_input_images
 from .models import BatchSummary, ProcessingOptions, ProcessResult
 from .naming import build_output_path
-from .validation import ensure_dir, ensure_file, iter_images
+from .validation import ensure_dir, ensure_file
 
 ProgressCallback = Callable[[str], None]
 CancelCallback = Callable[[], bool]
@@ -30,33 +31,18 @@ def process_single(
     return result
 
 
-def _canonical_output_path(input_path: Path, output_dir: Path, options: ProcessingOptions) -> Path:
-    return output_dir / f"{input_path.stem}{options.normalized_suffix()}.{options.output_format.lower().lstrip('.')}"
-
-
-def process_directory(
-    input_dir: Path,
+def process_files(
+    input_paths: Iterable[Path],
     output_dir: Path,
     options: ProcessingOptions,
     *,
-    recursive: bool = False,
     on_progress: ProgressCallback | None = None,
     should_cancel: CancelCallback | None = None,
 ) -> BatchSummary:
-    source = ensure_dir(input_dir)
+    """Process an explicit list of input files into one output directory."""
+
     target = ensure_dir(output_dir, create=True)
-
-    if recursive:
-        from .validation import SUPPORTED_IMAGE_EXTENSIONS
-
-        images = sorted(
-            child
-            for child in source.rglob("*")
-            if child.is_file() and child.suffix.lower() in SUPPORTED_IMAGE_EXTENSIONS
-        )
-    else:
-        images = iter_images(source)
-
+    images = [ensure_file(path) for path in input_paths]
     results: list[ProcessResult] = []
     errors: list[str] = []
     skipped = 0
@@ -69,11 +55,11 @@ def process_directory(
                 on_progress(f"CANCELLED batch export; skipped remaining={remaining}")
             break
         try:
-            canonical_output_path = _canonical_output_path(image_path, target, options)
-            if canonical_output_path.exists() and not options.overwrite:
+            canonical = canonical_output_path(image_path, target, options)
+            if canonical.exists() and not options.overwrite:
                 skipped += 1
                 if on_progress:
-                    on_progress(f"Skipped existing {canonical_output_path.name}")
+                    on_progress(f"Skipped existing {canonical.name}")
                 continue
             output_path = build_output_path(
                 image_path,
@@ -99,4 +85,24 @@ def process_directory(
         skipped=skipped,
         results=tuple(results),
         errors=tuple(errors),
+    )
+
+
+def process_directory(
+    input_dir: Path,
+    output_dir: Path,
+    options: ProcessingOptions,
+    *,
+    recursive: bool = False,
+    on_progress: ProgressCallback | None = None,
+    should_cancel: CancelCallback | None = None,
+) -> BatchSummary:
+    source = ensure_dir(input_dir)
+    images = scan_input_images(source, mode="batch", recursive=recursive)
+    return process_files(
+        images,
+        output_dir,
+        options,
+        on_progress=on_progress,
+        should_cancel=should_cancel,
     )
