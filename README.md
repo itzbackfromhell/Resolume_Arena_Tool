@@ -1,4 +1,4 @@
-﻿# Resolume Alpha Dropper
+# Resolume Alpha Dropper
 
 **Resolume Alpha Dropper** is a local-first Windows-friendly toolkit for creating transparent image assets for Resolume Arena/Avenue workflows.
 
@@ -8,14 +8,15 @@ It removes backgrounds, cleans alpha edges, batch-processes folders, exports tra
 
 ```text
 image/folder in
-  -> local background removal
+  -> optional local background removal
   -> alpha cleanup / edge feather / matte despill
-  -> transparent export
-  -> optional Resolume handoff folder or local API call
+  -> transparent PNG/WebP export
+  -> drag/import into Resolume
 ```
 
 ## Features
 
+- Tkinter desktop GUI with input preview, processed preview, presets, logs, and explicit **Export** action.
 - Local processing pipeline for transparent PNG/WebP assets.
 - Optional `rembg` backend for AI background removal.
 - Alpha cleanup controls:
@@ -26,8 +27,8 @@ image/folder in
   - transparent-pixel RGB cleanup
 - Batch folder processing.
 - Watch-folder mode for auto-processing new files.
-- Tkinter desktop GUI with preview, presets, logs, and export settings.
 - CLI for automation and power users.
+- `rembg-check` command for local background-removal diagnostics.
 - Optional local Resolume REST/Webserver client scaffold.
 - CI, tests, docs, AGENTS.md, and build script included.
 
@@ -40,7 +41,7 @@ The default workflow is local:
 - optional `rembg[cpu]`
 - optional Resolume local webserver/OSC workflow later
 
-`rembg` can run as a Python library, CLI, HTTP server, or Docker container. Its upstream documentation currently lists Python `>=3.11, <3.14` and supports CPU/GPU installation extras.
+`rembg` is optional and may depend on your Python, `onnxruntime`, and model-cache setup. Use `resolume-alpha rembg-check` to verify the local backend before using background removal in the GUI.
 
 ## Quick start
 
@@ -79,13 +80,19 @@ With developer tooling:
 pip install -e ".[dev]"
 ```
 
+Recommended local dev install:
+
+```powershell
+pip install -e ".[dev,rembg]"
+```
+
 ### 4. Launch GUI
 
 ```powershell
 resolume-alpha-gui
 ```
 
-or:
+or directly from source:
 
 ```powershell
 python -m resolume_alpha_tool.app
@@ -93,10 +100,16 @@ python -m resolume_alpha_tool.app
 
 ### 5. Use CLI
 
+Check background-removal backend:
+
+```powershell
+resolume-alpha rembg-check
+```
+
 Single image:
 
 ```powershell
-resolume-alpha remove input.jpg output\input_alpha.png --remove-bg --preset clean
+resolume-alpha remove input.jpg output --remove-bg --preset clean --overwrite
 ```
 
 Batch folder:
@@ -110,6 +123,19 @@ Watch folder:
 ```powershell
 resolume-alpha watch input output --remove-bg --preset resolume_1080p
 ```
+
+## GUI workflow
+
+See [docs/GUI.md](docs/GUI.md).
+
+Short version:
+
+1. Select **File** or **Folder** input.
+2. Choose an **Output folder**.
+3. Adjust cleanup/export settings.
+4. Use **Preview**.
+5. Click **Export**.
+6. Import/drag the exported PNG/WebP into Resolume.
 
 ## Resolume workflow
 
@@ -135,15 +161,17 @@ src/resolume_alpha_tool/
   core/
     alpha_processor.py
     batch.py
-    config.py
     exceptions.py
     file_watcher.py
+    input_resolver.py
     models.py
     naming.py
     presets.py
+    rembg_runtime.py
     resolume_api.py
     validation.py
 presets/defaults.json
+docs/GUI.md
 docs/USAGE.md
 docs/ARCHITECTURE.md
 tests/
@@ -161,6 +189,7 @@ The script installs PyInstaller if needed and outputs a single-file executable u
 ## Quality gates
 
 ```powershell
+python -m compileall -q src tests
 python -m pytest
 python -m ruff check .
 ```
@@ -168,12 +197,11 @@ python -m ruff check .
 ## Roadmap
 
 - v0.1: local alpha export, batch mode, GUI, CLI.
-- v0.2: better preview UX, drag/drop support, preset editor.
-- v0.3: Resolume API clip import helpers.
-- v0.4: OSC triggering.
+- v0.2: preview UX, explicit export flow, input stability, rembg diagnostics.
+- v0.3: preset editor and stronger GUI packaging.
+- v0.4: Resolume API clip import helpers.
 - v1.0: installer, signed builds, GPU presets, production performance profiles.
 
 ## License
 
 MIT
-
