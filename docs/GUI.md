@@ -10,7 +10,8 @@ Resolume Alpha Dropper is a local desktop tool. It does not download exports fro
 4. Choose or create a preset.
 5. Adjust alpha cleanup, alpha effects, and export options.
 6. Use **Preview** to check the processed result.
-7. Click **Export**.
+7. Use **Refresh queue** to inspect planned batch work.
+8. Click **Export**.
 
 ## Persistent GUI state
 
@@ -54,12 +55,48 @@ The **Alpha effects** panel runs after alpha cleanup and before canvas fitting:
 
 Effect margins are added automatically so outline, glow, and shadow have room before final canvas fitting.
 
+## Batch queue
+
+The **Batch Queue** table previews planned work before export:
+
+- `pending` means the file will be processed.
+- `skipped_existing` means the canonical output already exists and **Overwrite** is disabled.
+- `done` means export completed successfully.
+- `failed` means export failed for that input.
+
+Use **Refresh queue** after changing input, output, presets, overwrite, recursive mode, or export format.
+
+## Retry failed
+
+After an export with failures, **Retry failed** becomes available. It re-runs only failed input files with the current processing/export settings.
+
+## Export reports
+
+Every export writes a timestamped JSON report into the selected output folder:
+
+```text
+export_report_YYYYMMDD_HHMMSS.json
+```
+
+The report includes:
+
+- mode
+- input path
+- output folder
+- processing options
+- processed / failed / skipped counts
+- exported output files
+- error strings
+- skipped-existing entries
+
+Use **Open report** to open the latest generated report.
+
 ## Export behavior
 
 - Single-image export writes one PNG/WebP into the output folder.
 - Batch export writes one output file per supported image.
 - **Recursive batch** includes supported images in nested folders.
-- The progress bar updates as files are saved.
+- The progress bar updates as files are saved or skipped.
 - **Cancel** requests a safe stop. The current file may finish before the batch stops.
 - The summary line shows processed / failed / skipped counts after export.
 - The log shows `EXPORTED ...` after successful exports.
