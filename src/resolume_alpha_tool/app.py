@@ -28,7 +28,7 @@ PREVIEW_SIZE = (340, 240)
 
 
 @dataclass(frozen=True)
-class ProcessingJob:
+class ExportJob:
     mode: str
     input_path: Path
     output_dir: Path
@@ -37,7 +37,7 @@ class ProcessingJob:
 
 
 class AlphaDropperApp(tk.Tk):
-    """Desktop GUI with robust path input, safe preview snapshots, and batch export."""
+    """Desktop GUI with robust path input, safe preview snapshots, and export flow."""
 
     def __init__(self) -> None:
         super().__init__()
@@ -46,7 +46,7 @@ class AlphaDropperApp(tk.Tk):
         self.minsize(1020, 680)
 
         self.log_queue: queue.Queue[object] = queue.Queue()
-        self.worker: threading.Thread | None = None
+        self.export_worker: threading.Thread | None = None
         self.preview_worker: threading.Thread | None = None
         self.preview_token = 0
         self.presets = self._load_presets()
@@ -152,7 +152,7 @@ class AlphaDropperApp(tk.Tk):
         panel.columnconfigure(1, weight=1)
 
     def _build_processing_panel(self, parent: ttk.Frame) -> None:
-        panel = ttk.LabelFrame(parent, text="Processing", padding=10)
+        panel = ttk.LabelFrame(parent, text="Alpha cleanup", padding=10)
         panel.grid(row=3, column=0, sticky="ew", pady=8)
         for col in range(4):
             panel.columnconfigure(col, weight=1)
@@ -195,10 +195,8 @@ class AlphaDropperApp(tk.Tk):
 
         self.preview_button = ttk.Button(panel, text="Preview", command=self._refresh_preview)
         self.preview_button.grid(row=0, column=0, sticky="ew", padx=(0, 4), pady=3)
-        self.export_button = ttk.Button(panel, text="Export", command=self._start_processing)
+        self.export_button = ttk.Button(panel, text="Export", command=self._start_export)
         self.export_button.grid(row=0, column=1, sticky="ew", padx=(4, 0), pady=3)
-        # Keep the old attribute name because the worker-enable logic already uses it.
-        self.run_button = self.export_button
         ttk.Button(panel, text="Open output", command=self._open_output_folder).grid(row=1, column=0, sticky="ew", padx=(0, 4), pady=3)
         ttk.Button(panel, text="Clear log", command=self._clear_log).grid(row=1, column=1, sticky="ew", padx=(4, 0), pady=3)
 
@@ -310,7 +308,7 @@ class AlphaDropperApp(tk.Tk):
             overwrite=bool(self.overwrite_var.get()),
         )
 
-    def _current_job(self, *_args: object) -> ProcessingJob | None:
+    def _current_job(self, *_args: object) -> ExportJob | None:
         input_raw = clean_path_text(self.input_var.get())
         output_raw = clean_path_text(self.output_var.get())
         if not input_raw:
@@ -319,7 +317,7 @@ class AlphaDropperApp(tk.Tk):
         if not input_path.exists():
             return None
         output_dir = Path(output_raw).expanduser() if output_raw else Path.cwd() / "output"
-        return ProcessingJob(
+        return ExportJob(
             mode=self.mode_var.get(),
             input_path=input_path,
             output_dir=output_dir,
@@ -387,8 +385,8 @@ class AlphaDropperApp(tk.Tk):
                     canvas.paste((245, 245, 245, 255), (x, y, min(x + tile, size[0]), min(y + tile, size[1])))
         return canvas
 
-    def _start_processing(self, *_args: object) -> None:
-        if self.worker and self.worker.is_alive():
+    def _start_export(self, *_args: object) -> None:
+        if self.export_worker and self.export_worker.is_alive():
             messagebox.showinfo("Busy", "Export is already running.")
             return
         job = self._current_job()
@@ -402,12 +400,12 @@ class AlphaDropperApp(tk.Tk):
             messagebox.showerror("Invalid input", "Batch folder mode needs an input folder.")
             return
 
-        self.run_button.configure(state=tk.DISABLED)
+        self.export_button.configure(state=tk.DISABLED)
         self.status_var.set("Exporting...")
-        self.worker = threading.Thread(target=self._process_worker, args=(job,), daemon=True)
-        self.worker.start()
+        self.export_worker = threading.Thread(target=self._export_worker_fn, args=(job,), daemon=True)
+        self.export_worker.start()
 
-    def _process_worker(self, job: ProcessingJob) -> None:
+    def _export_worker_fn(self, job: ExportJob) -> None:
         try:
             job.output_dir.mkdir(parents=True, exist_ok=True)
             if job.mode == "single":
@@ -423,14 +421,14 @@ class AlphaDropperApp(tk.Tk):
         except Exception as exc:
             self.log_queue.put(f"ERROR {exc}")
         finally:
-            self.log_queue.put("enable_button")
+            self.log_queue.put("enable_export_button")
 
     def _drain_log_queue(self, *_args: object) -> None:
         try:
             while True:
                 message = self.log_queue.get_nowait()
-                if message == "enable_button":
-                    self.run_button.configure(state=tk.NORMAL)
+                if message == "enable_export_button":
+                    self.export_button.configure(state=tk.NORMAL)
                     self.status_var.set("Ready")
                 elif isinstance(message, tuple) and message[0] == "preview":
                     _, token, image = message
