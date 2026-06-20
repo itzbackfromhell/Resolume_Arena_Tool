@@ -27,6 +27,23 @@ For sharper logo-like assets:
 - Feather: `0`
 - Despill: `0.15`
 
+## Alpha effects
+
+Use these when the exported asset should be more VJ-ready without another editor:
+
+- `--auto-crop` trims transparent empty bounds.
+- `--padding 48` adds transparent room around the cutout.
+- `--outline 8` adds an outer stroke.
+- `--glow 18` adds a blurred glow.
+- `--shadow 14 --shadow-offset-x 12 --shadow-offset-y 12` adds a soft offset shadow.
+- `--invert-alpha` flips the alpha mask for special cases.
+
+Bundled effect presets:
+
+- `sticker_outline`
+- `vj_glow_1080p`
+- `shadow_cutout_1080p`
+
 ## CLI examples
 
 Single image, no AI background removal, just alpha cleanup:
@@ -39,6 +56,18 @@ Single image with local background removal:
 
 ```powershell
 resolume-alpha remove .\input\photo.jpg .\output --remove-bg --preset resolume_1080p
+```
+
+Sticker-style cutout:
+
+```powershell
+resolume-alpha remove .\input\logo.png .\output --preset sticker_outline --overwrite
+```
+
+Manual glow setup:
+
+```powershell
+resolume-alpha remove .\input\asset.png .\output --auto-crop --padding 64 --glow 18 --preset resolume_1080p
 ```
 
 Batch:
