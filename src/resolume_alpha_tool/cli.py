@@ -6,14 +6,17 @@ import argparse
 from pathlib import Path
 
 from .core.batch import process_directory, process_single
+from .core.diagnostics import write_diagnostics_report
 from .core.file_watcher import watch_folder
 from .core.models import ProcessingOptions, ResolumeConfig
 from .core.naming import build_output_path
 from .core.presets import load_presets, options_from_preset
 from .core.rembg_runtime import rembg_healthcheck, runtime_summary
+from .core.resources import default_preset_path, ensure_portable_dirs
 from .core.resolume_api import ResolumeClient
+from .core.resolume_profiles import PROFILES
 
-DEFAULT_PRESET_PATH = Path(__file__).resolve().parents[2] / "presets" / "defaults.json"
+DEFAULT_PRESET_PATH = default_preset_path()
 
 
 def _add_options(parser: argparse.ArgumentParser) -> None:
@@ -132,6 +135,19 @@ def cmd_resolume(args: argparse.Namespace) -> int:
     return 0 if ok else 1
 
 
+def cmd_profiles(_args: argparse.Namespace) -> int:
+    for profile in PROFILES.values():
+        print(f"{profile.name}: {profile.description} -> {profile.suggested_folder}")
+    return 0
+
+
+def cmd_diagnostics(args: argparse.Namespace) -> int:
+    ensure_portable_dirs()
+    report = write_diagnostics_report(Path(args.output) if args.output else None)
+    print(f"Diagnostics written: {report}")
+    return 0
+
+
 def cmd_rembg_check(args: argparse.Namespace) -> int:
     print(f"Runtime: {runtime_summary()}")
     try:
@@ -175,6 +191,13 @@ def build_parser() -> argparse.ArgumentParser:
     resolume.add_argument("--port", type=int, default=8080)
     resolume.add_argument("--timeout", type=float, default=2.0)
     resolume.set_defaults(func=cmd_resolume)
+
+    profiles = sub.add_parser("profiles", help="List safe Resolume export workflow profiles.")
+    profiles.set_defaults(func=cmd_profiles)
+
+    diagnostics = sub.add_parser("diagnostics", help="Write a local diagnostics JSON report.")
+    diagnostics.add_argument("--output", help="Optional explicit report output path.")
+    diagnostics.set_defaults(func=cmd_diagnostics)
 
     return parser
 
