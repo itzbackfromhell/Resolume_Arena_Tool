@@ -5,6 +5,20 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+function Invoke-Checked {
+    param(
+        [string]$Label,
+        [scriptblock]$Command
+    )
+
+    Write-Host "==> $Label"
+    & $Command
+    if ($LASTEXITCODE -ne 0) {
+        throw "$Label failed with exit code $LASTEXITCODE"
+    }
+}
+
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $Root
 
@@ -15,17 +29,17 @@ $ZipPath = Join-Path $ReleaseRoot $ZipName
 $Extras = if ($Flavor -eq "Full") { ".[dev,rembg]" } else { ".[dev]" }
 
 if (-not (Test-Path ".venv")) {
-    py -3.11 -m venv .venv
+    Invoke-Checked "Create virtual environment" { py -3.11 -m venv .venv }
 }
 
 . .\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-pip install -e $Extras
+Invoke-Checked "Upgrade pip" { python -m pip install --upgrade pip }
+Invoke-Checked "Install project extras" { pip install -e $Extras }
 
 if (-not $SkipTests) {
-    python -m compileall -q src tests
-    python -m pytest
-    python -m ruff check .
+    Invoke-Checked "Compile sources" { python -m compileall -q src tests }
+    Invoke-Checked "Run tests" { python -m pytest }
+    Invoke-Checked "Run ruff" { python -m ruff check . }
 }
 
 Remove-Item -Recurse -Force "dist", "build" -ErrorAction SilentlyContinue
@@ -36,10 +50,12 @@ New-Item -ItemType Directory -Force (Join-Path $AppDir "presets") | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $AppDir "output") | Out-Null
 New-Item -ItemType Directory -Force (Join-Path $AppDir "logs") | Out-Null
 
-python -m PyInstaller --noconfirm --clean --onefile --windowed `
-    --name ResolumeAlphaDropper `
-    --add-data "presets;presets" `
-    src\resolume_alpha_tool\app.py
+Invoke-Checked "Build PyInstaller executable" {
+    python -m PyInstaller --noconfirm --clean --onefile --windowed `
+        --name ResolumeAlphaDropper `
+        --add-data "presets;presets" `
+        src\resolume_alpha_tool\app.py
+}
 
 Copy-Item "dist\ResolumeAlphaDropper.exe" (Join-Path $AppDir "ResolumeAlphaDropper.exe") -Force
 Copy-Item "presets\defaults.json" (Join-Path $AppDir "presets\defaults.json") -Force
