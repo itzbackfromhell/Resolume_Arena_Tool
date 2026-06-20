@@ -15,6 +15,18 @@ from .exceptions import ResolumeApiError
 from .models import ResolumeConfig
 
 
+def _response_payload(response: requests.Response) -> Any:
+    if not response.text:
+        return None
+    content_type = response.headers.get("content-type", "")
+    if "json" not in content_type.lower():
+        return response.text
+    try:
+        return response.json()
+    except ValueError as exc:
+        raise ResolumeApiError(f"Resolume returned invalid JSON: {exc}") from exc
+
+
 class ResolumeClient:
     """Small wrapper around Resolume's local webserver API."""
 
@@ -31,10 +43,7 @@ class ResolumeClient:
             response.raise_for_status()
         except requests.RequestException as exc:
             raise ResolumeApiError(f"Resolume GET failed for {path}: {exc}") from exc
-        if not response.text:
-            return None
-        content_type = response.headers.get("content-type", "")
-        return response.json() if "json" in content_type else response.text
+        return _response_payload(response)
 
     def put(self, path: str, payload: dict[str, Any]) -> Any:
         try:
@@ -44,7 +53,7 @@ class ResolumeClient:
             response.raise_for_status()
         except requests.RequestException as exc:
             raise ResolumeApiError(f"Resolume PUT failed for {path}: {exc}") from exc
-        return response.json() if response.text else None
+        return _response_payload(response)
 
     def post(self, path: str, payload: dict[str, Any] | None = None) -> Any:
         try:
@@ -54,7 +63,7 @@ class ResolumeClient:
             response.raise_for_status()
         except requests.RequestException as exc:
             raise ResolumeApiError(f"Resolume POST failed for {path}: {exc}") from exc
-        return response.json() if response.text else None
+        return _response_payload(response)
 
     def healthcheck(self) -> bool:
         """Return True if a local Resolume webserver appears reachable."""
