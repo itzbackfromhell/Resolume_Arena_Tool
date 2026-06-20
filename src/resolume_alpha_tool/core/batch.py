@@ -11,6 +11,7 @@ from .naming import build_output_path
 from .validation import ensure_dir, ensure_file, iter_images
 
 ProgressCallback = Callable[[str], None]
+CancelCallback = Callable[[], bool]
 
 
 def process_single(
@@ -36,6 +37,7 @@ def process_directory(
     *,
     recursive: bool = False,
     on_progress: ProgressCallback | None = None,
+    should_cancel: CancelCallback | None = None,
 ) -> BatchSummary:
     source = ensure_dir(input_dir)
     target = ensure_dir(output_dir, create=True)
@@ -55,7 +57,12 @@ def process_directory(
     errors: list[str] = []
     skipped = 0
 
-    for image_path in images:
+    for index, image_path in enumerate(images):
+        if should_cancel and should_cancel():
+            skipped += len(images) - index
+            if on_progress:
+                on_progress("CANCELLED batch export")
+            break
         try:
             output_path = build_output_path(
                 image_path,
