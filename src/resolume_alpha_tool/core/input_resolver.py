@@ -4,7 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-SUPPORTED_IMAGE_SUFFIXES = frozenset({".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"})
+from .validation import SUPPORTED_IMAGE_EXTENSIONS
+
+SUPPORTED_IMAGE_SUFFIXES = frozenset(SUPPORTED_IMAGE_EXTENSIONS)
 
 
 def clean_path_text(value: str) -> str:
