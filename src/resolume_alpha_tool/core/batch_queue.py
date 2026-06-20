@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Literal
 
 from .models import ProcessingOptions
+from .naming import build_output_path
 from .validation import SUPPORTED_IMAGE_EXTENSIONS, ensure_dir, ensure_file, iter_images
 
 QueueStatus = Literal["pending", "skipped_existing"]
@@ -60,8 +61,18 @@ def scan_export_queue(
     images = scan_input_images(input_path, mode=mode, recursive=recursive)
     items: list[QueueItem] = []
     for image_path in images:
-        output_path = canonical_output_path(image_path, target, options)
-        status: QueueStatus = "skipped_existing" if output_path.exists() and not options.overwrite else "pending"
+        if mode == "single":
+            output_path = build_output_path(
+                image_path,
+                target,
+                suffix=options.normalized_suffix(),
+                extension=options.output_format,
+                overwrite=options.overwrite,
+            )
+            status: QueueStatus = "pending"
+        else:
+            output_path = canonical_output_path(image_path, target, options)
+            status = "skipped_existing" if output_path.exists() and not options.overwrite else "pending"
         items.append(QueueItem(input_path=image_path, output_path=output_path, status=status))
     return tuple(items)
 
