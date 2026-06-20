@@ -2,7 +2,7 @@
 
 **Resolume Alpha Dropper** is a local-first Windows-friendly toolkit for creating transparent image assets for Resolume Arena/Avenue workflows.
 
-It removes backgrounds, cleans alpha edges, adds visual alpha effects, batch-processes folders, exports transparent PNG/WebP files, and can optionally talk to a local Resolume webserver endpoint. No paid cloud API is required.
+It removes backgrounds, cleans alpha edges, adds visual alpha effects, previews/batches/queues exports, writes reports, and can optionally talk to a local Resolume webserver endpoint. No paid cloud API is required.
 
 ## Core idea
 
@@ -20,6 +20,7 @@ image/folder in
 - Tkinter desktop GUI with input preview, processed preview, presets, logs, progress, cancel, and explicit **Export** action.
 - GUI state persistence for last-used paths, settings, selected preset, and window geometry.
 - User preset manager with save, delete, import, and export support.
+- Batch queue preview, skipped-existing detection, retry-failed support, and JSON export reports.
 - Local processing pipeline for transparent PNG/WebP assets.
 - Optional `rembg` backend for AI background removal.
 - Alpha cleanup controls:
@@ -36,11 +37,12 @@ image/folder in
   - glow
   - shadow with X/Y offset
 - Batch folder processing, including optional recursive batch mode in the GUI.
-- Watch-folder mode for auto-processing new files.
+- Watch-folder mode for auto-processing new or changed files.
 - CLI for automation and power users.
-- `rembg-check` command for local background-removal diagnostics.
-- Optional local Resolume REST/Webserver client scaffold.
-- CI, tests, docs, AGENTS.md, and build script included.
+- `rembg-check` and `diagnostics` commands for local support.
+- Safe Resolume export workflow profiles.
+- Portable ZIP build scripts for Light and Full release variants.
+- CI, tests, docs, AGENTS.md, and build scripts included.
 
 ## No-cost stack
 
@@ -116,6 +118,18 @@ Check background-removal backend:
 resolume-alpha rembg-check
 ```
 
+Create a diagnostics report:
+
+```powershell
+resolume-alpha diagnostics
+```
+
+List Resolume workflow profiles:
+
+```powershell
+resolume-alpha profiles
+```
+
 Single image:
 
 ```powershell
@@ -151,9 +165,10 @@ Short version:
 3. Pick or save a preset.
 4. Adjust cleanup/effect/export settings.
 5. Use **Preview**.
-6. Click **Export**.
-7. Check progress and final summary.
-8. Import/drag the exported PNG/WebP into Resolume.
+6. Use **Refresh queue** for batch work.
+7. Click **Export**.
+8. Check progress, queue state, final summary, and JSON report.
+9. Import/drag the exported PNG/WebP into Resolume.
 
 ## Resolume workflow
 
@@ -179,7 +194,10 @@ src/resolume_alpha_tool/
   core/
     alpha_processor.py
     batch.py
+    batch_queue.py
+    diagnostics.py
     exceptions.py
+    export_report.py
     file_watcher.py
     gui_settings.py
     input_resolver.py
@@ -188,23 +206,46 @@ src/resolume_alpha_tool/
     preset_store.py
     presets.py
     rembg_runtime.py
+    resources.py
     resolume_api.py
+    resolume_profiles.py
     validation.py
 presets/defaults.json
+README_STARTEN.txt
 docs/GUI.md
 docs/USAGE.md
 docs/ARCHITECTURE.md
 tests/
 scripts/build_windows.ps1
+scripts/build_portable.ps1
+scripts/smoke_portable.ps1
 ```
 
 ## Build Windows EXE
+
+Developer EXE:
 
 ```powershell
 .\scripts\build_windows.ps1
 ```
 
-The script installs PyInstaller if needed and outputs a single-file executable under `dist/`.
+Portable Light ZIP:
+
+```powershell
+.\scripts\build_portable.ps1 -Flavor Light
+```
+
+Portable Full ZIP with `rembg` extras:
+
+```powershell
+.\scripts\build_portable.ps1 -Flavor Full
+```
+
+Smoke-check portable folder:
+
+```powershell
+.\scripts\smoke_portable.ps1
+```
 
 ## Quality gates
 
@@ -218,8 +259,8 @@ python -m ruff check .
 
 - v0.1: local alpha export, batch mode, GUI, CLI.
 - v0.2: preview UX, explicit export flow, input stability, rembg diagnostics.
-- v0.3: preset editor and stronger GUI packaging.
-- v0.4: Resolume API clip import helpers.
+- v0.3: preset editor, queue/report workflow, and stronger GUI packaging.
+- v0.4: portable release foundation and safe Resolume workflow profiles.
 - v1.0: installer, signed builds, GPU presets, production performance profiles.
 
 ## License
