@@ -21,6 +21,14 @@ class ProcessingOptions:
     alpha_gamma: float = 1.0
     despill_strength: float = 0.35
     transparent_rgb_cleanup: bool = True
+    invert_alpha: bool = False
+    auto_crop: bool = False
+    padding: int = 0
+    outline_width: int = 0
+    glow_radius: float = 0.0
+    shadow_radius: float = 0.0
+    shadow_offset_x: int = 8
+    shadow_offset_y: int = 8
     fit_mode: FitMode = "none"
     canvas_width: int | None = None
     canvas_height: int | None = None
