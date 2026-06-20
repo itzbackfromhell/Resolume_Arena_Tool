@@ -24,6 +24,14 @@ def _add_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--feather", type=float, default=None)
     parser.add_argument("--gamma", type=float, default=None)
     parser.add_argument("--despill", type=float, default=None)
+    parser.add_argument("--invert-alpha", action="store_true")
+    parser.add_argument("--auto-crop", action="store_true")
+    parser.add_argument("--padding", type=int, default=None)
+    parser.add_argument("--outline", type=int, default=None, help="Black outline width in pixels.")
+    parser.add_argument("--glow", type=float, default=None, help="White glow blur radius in pixels.")
+    parser.add_argument("--shadow", type=float, default=None, help="Black drop-shadow blur radius in pixels.")
+    parser.add_argument("--shadow-offset-x", type=int, default=None)
+    parser.add_argument("--shadow-offset-y", type=int, default=None)
     parser.add_argument("--fit", choices=["none", "contain", "cover", "stretch"], default=None)
     parser.add_argument("--width", type=int, default=None)
     parser.add_argument("--height", type=int, default=None)
@@ -47,6 +55,14 @@ def _build_options(args: argparse.Namespace) -> ProcessingOptions:
         "feather_radius": args.feather if args.feather is not None else options.feather_radius,
         "alpha_gamma": args.gamma if args.gamma is not None else options.alpha_gamma,
         "despill_strength": args.despill if args.despill is not None else options.despill_strength,
+        "invert_alpha": args.invert_alpha or options.invert_alpha,
+        "auto_crop": args.auto_crop or options.auto_crop,
+        "padding": args.padding if args.padding is not None else options.padding,
+        "outline_width": args.outline if args.outline is not None else options.outline_width,
+        "glow_radius": args.glow if args.glow is not None else options.glow_radius,
+        "shadow_radius": args.shadow if args.shadow is not None else options.shadow_radius,
+        "shadow_offset_x": args.shadow_offset_x if args.shadow_offset_x is not None else options.shadow_offset_x,
+        "shadow_offset_y": args.shadow_offset_y if args.shadow_offset_y is not None else options.shadow_offset_y,
         "fit_mode": args.fit if args.fit is not None else options.fit_mode,
         "canvas_width": args.width if args.width is not None else options.canvas_width,
         "canvas_height": args.height if args.height is not None else options.canvas_height,
