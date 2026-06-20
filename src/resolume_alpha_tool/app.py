@@ -59,8 +59,8 @@ class AlphaDropperApp(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
         self.title("Resolume Alpha Dropper")
-        self.geometry("1160x800")
-        self.minsize(1040, 720)
+        self.geometry("1160x860")
+        self.minsize(1040, 760)
 
         self.settings = load_json_object(settings_path())
         if isinstance(self.settings.get("window_geometry"), str):
@@ -92,6 +92,14 @@ class AlphaDropperApp(tk.Tk):
         self.feather_var = tk.DoubleVar(value=float(self.settings.get("feather_radius", 0.8)))
         self.gamma_var = tk.DoubleVar(value=float(self.settings.get("alpha_gamma", 1.0)))
         self.despill_var = tk.DoubleVar(value=float(self.settings.get("despill_strength", 0.35)))
+        self.invert_alpha_var = tk.BooleanVar(value=bool(self.settings.get("invert_alpha", False)))
+        self.auto_crop_var = tk.BooleanVar(value=bool(self.settings.get("auto_crop", False)))
+        self.padding_var = tk.IntVar(value=int(self.settings.get("padding", 0)))
+        self.outline_width_var = tk.IntVar(value=int(self.settings.get("outline_width", 0)))
+        self.glow_radius_var = tk.DoubleVar(value=float(self.settings.get("glow_radius", 0.0)))
+        self.shadow_radius_var = tk.DoubleVar(value=float(self.settings.get("shadow_radius", 0.0)))
+        self.shadow_offset_x_var = tk.IntVar(value=int(self.settings.get("shadow_offset_x", 8)))
+        self.shadow_offset_y_var = tk.IntVar(value=int(self.settings.get("shadow_offset_y", 8)))
         self.fit_var = tk.StringVar(value=str(self.settings.get("fit_mode", "contain")))
         self.width_var = tk.IntVar(value=int(self.settings.get("canvas_width", 1920)))
         self.height_var = tk.IntVar(value=int(self.settings.get("canvas_height", 1080)))
@@ -122,10 +130,7 @@ class AlphaDropperApp(tk.Tk):
             return {}
 
     def _load_user_presets(self) -> dict[str, dict[str, Any]]:
-        try:
-            return normalize_presets(load_json_object(user_presets_path()))
-        except ValueError:
-            return {}
+        return normalize_presets(load_json_object(user_presets_path()))
 
     def _build_ui(self) -> None:
         root = ttk.Frame(self, padding=12)
@@ -160,6 +165,7 @@ class AlphaDropperApp(tk.Tk):
         self._build_path_panel(left)
         self._build_preset_panel(left)
         self._build_processing_panel(left)
+        self._build_effect_panel(left)
         self._build_export_panel(left)
         self._build_action_panel(left)
         self._build_preview_panel(right)
@@ -241,6 +247,31 @@ class AlphaDropperApp(tk.Tk):
         self._spin(panel, "Gamma", self.gamma_var, 0.1, 4, 0.1, 3, 0)
         self._spin(panel, "Despill", self.despill_var, 0, 1, 0.05, 3, 2)
 
+    def _build_effect_panel(self, parent: ttk.Frame) -> None:
+        panel = ttk.LabelFrame(parent, text="Alpha effects", padding=10)
+        panel.grid(row=4, column=0, sticky="ew", pady=8)
+        for col in range(4):
+            panel.columnconfigure(col, weight=1)
+
+        ttk.Checkbutton(
+            panel,
+            text="Invert alpha",
+            variable=self.invert_alpha_var,
+            command=self._refresh_preview,
+        ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 4))
+        ttk.Checkbutton(
+            panel,
+            text="Auto-crop alpha",
+            variable=self.auto_crop_var,
+            command=self._refresh_preview,
+        ).grid(row=0, column=2, columnspan=2, sticky="w", pady=(0, 4))
+        self._spin(panel, "Padding", self.padding_var, 0, 512, 1, 1, 0)
+        self._spin(panel, "Outline", self.outline_width_var, 0, 128, 1, 1, 2)
+        self._spin(panel, "Glow", self.glow_radius_var, 0, 128, 0.5, 2, 0)
+        self._spin(panel, "Shadow", self.shadow_radius_var, 0, 128, 0.5, 2, 2)
+        self._spin(panel, "Shadow X", self.shadow_offset_x_var, -512, 512, 1, 3, 0)
+        self._spin(panel, "Shadow Y", self.shadow_offset_y_var, -512, 512, 1, 3, 2)
+
     def _spin(
         self,
         parent: ttk.Frame,
@@ -265,7 +296,7 @@ class AlphaDropperApp(tk.Tk):
 
     def _build_export_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Export", padding=10)
-        panel.grid(row=4, column=0, sticky="ew", pady=8)
+        panel.grid(row=5, column=0, sticky="ew", pady=8)
         for col in range(4):
             panel.columnconfigure(col, weight=1)
 
@@ -285,7 +316,7 @@ class AlphaDropperApp(tk.Tk):
 
     def _build_action_panel(self, parent: ttk.Frame) -> None:
         panel = ttk.LabelFrame(parent, text="Actions", padding=10)
-        panel.grid(row=5, column=0, sticky="ew", pady=8)
+        panel.grid(row=6, column=0, sticky="ew", pady=8)
         panel.columnconfigure(0, weight=1)
         panel.columnconfigure(1, weight=1)
         panel.columnconfigure(2, weight=1)
@@ -336,6 +367,14 @@ class AlphaDropperApp(tk.Tk):
             self.feather_var,
             self.gamma_var,
             self.despill_var,
+            self.invert_alpha_var,
+            self.auto_crop_var,
+            self.padding_var,
+            self.outline_width_var,
+            self.glow_radius_var,
+            self.shadow_radius_var,
+            self.shadow_offset_x_var,
+            self.shadow_offset_y_var,
             self.fit_var,
             self.width_var,
             self.height_var,
@@ -422,6 +461,14 @@ class AlphaDropperApp(tk.Tk):
             self.feather_var.set(float(preset.get("feather_radius", self.feather_var.get())))
             self.gamma_var.set(float(preset.get("alpha_gamma", self.gamma_var.get())))
             self.despill_var.set(float(preset.get("despill_strength", self.despill_var.get())))
+            self.invert_alpha_var.set(bool(preset.get("invert_alpha", self.invert_alpha_var.get())))
+            self.auto_crop_var.set(bool(preset.get("auto_crop", self.auto_crop_var.get())))
+            self.padding_var.set(int(preset.get("padding", self.padding_var.get())))
+            self.outline_width_var.set(int(preset.get("outline_width", self.outline_width_var.get())))
+            self.glow_radius_var.set(float(preset.get("glow_radius", self.glow_radius_var.get())))
+            self.shadow_radius_var.set(float(preset.get("shadow_radius", self.shadow_radius_var.get())))
+            self.shadow_offset_x_var.set(int(preset.get("shadow_offset_x", self.shadow_offset_x_var.get())))
+            self.shadow_offset_y_var.set(int(preset.get("shadow_offset_y", self.shadow_offset_y_var.get())))
             self.fit_var.set(str(preset.get("fit_mode", self.fit_var.get())))
             if preset.get("canvas_width"):
                 self.width_var.set(int(preset["canvas_width"]))
@@ -533,6 +580,14 @@ class AlphaDropperApp(tk.Tk):
             feather_radius=float(self.feather_var.get()),
             alpha_gamma=float(self.gamma_var.get()),
             despill_strength=float(self.despill_var.get()),
+            invert_alpha=bool(self.invert_alpha_var.get()),
+            auto_crop=bool(self.auto_crop_var.get()),
+            padding=int(self.padding_var.get()),
+            outline_width=int(self.outline_width_var.get()),
+            glow_radius=float(self.glow_radius_var.get()),
+            shadow_radius=float(self.shadow_radius_var.get()),
+            shadow_offset_x=int(self.shadow_offset_x_var.get()),
+            shadow_offset_y=int(self.shadow_offset_y_var.get()),
             fit_mode=fit_mode,  # type: ignore[arg-type]
             canvas_width=width,
             canvas_height=height,
@@ -822,6 +877,14 @@ class AlphaDropperApp(tk.Tk):
             "feather_radius": options.feather_radius,
             "alpha_gamma": options.alpha_gamma,
             "despill_strength": options.despill_strength,
+            "invert_alpha": options.invert_alpha,
+            "auto_crop": options.auto_crop,
+            "padding": options.padding,
+            "outline_width": options.outline_width,
+            "glow_radius": options.glow_radius,
+            "shadow_radius": options.shadow_radius,
+            "shadow_offset_x": options.shadow_offset_x,
+            "shadow_offset_y": options.shadow_offset_y,
             "fit_mode": options.fit_mode,
             "canvas_width": self.width_var.get(),
             "canvas_height": self.height_var.get(),
