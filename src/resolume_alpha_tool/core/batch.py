@@ -30,6 +30,10 @@ def process_single(
     return result
 
 
+def _canonical_output_path(input_path: Path, output_dir: Path, options: ProcessingOptions) -> Path:
+    return output_dir / f"{input_path.stem}{options.normalized_suffix()}.{options.output_format.lower().lstrip('.')}"
+
+
 def process_directory(
     input_dir: Path,
     output_dir: Path,
@@ -65,6 +69,12 @@ def process_directory(
                 on_progress(f"CANCELLED batch export; skipped remaining={remaining}")
             break
         try:
+            canonical_output_path = _canonical_output_path(image_path, target, options)
+            if canonical_output_path.exists() and not options.overwrite:
+                skipped += 1
+                if on_progress:
+                    on_progress(f"Skipped existing {canonical_output_path.name}")
+                continue
             output_path = build_output_path(
                 image_path,
                 target,
@@ -72,11 +82,6 @@ def process_directory(
                 extension=options.output_format,
                 overwrite=options.overwrite,
             )
-            if output_path.exists() and not options.overwrite:
-                skipped += 1
-                if on_progress:
-                    on_progress(f"Skipped existing {output_path.name}")
-                continue
             if on_progress:
                 on_progress(f"Processing {image_path.name}")
             result = process_file(image_path, output_path, options)
