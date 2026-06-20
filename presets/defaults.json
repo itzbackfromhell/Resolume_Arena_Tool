@@ -42,5 +42,44 @@
     "canvas_width": 3840,
     "canvas_height": 2160,
     "output_format": "png"
+  },
+  "sticker_outline": {
+    "alpha_threshold": 16,
+    "feather_radius": 0.4,
+    "alpha_gamma": 1.05,
+    "despill_strength": 0.25,
+    "auto_crop": true,
+    "padding": 48,
+    "outline_width": 8,
+    "fit_mode": "none",
+    "output_format": "png"
+  },
+  "vj_glow_1080p": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "auto_crop": true,
+    "padding": 64,
+    "glow_radius": 18.0,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
+  },
+  "shadow_cutout_1080p": {
+    "alpha_threshold": 8,
+    "feather_radius": 0.8,
+    "alpha_gamma": 1.0,
+    "despill_strength": 0.35,
+    "auto_crop": true,
+    "padding": 64,
+    "shadow_radius": 14.0,
+    "shadow_offset_x": 12,
+    "shadow_offset_y": 12,
+    "fit_mode": "contain",
+    "canvas_width": 1920,
+    "canvas_height": 1080,
+    "output_format": "png"
   }
 }
