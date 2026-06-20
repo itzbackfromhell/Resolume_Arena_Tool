@@ -34,6 +34,29 @@ def test_scan_export_queue_marks_existing_outputs(tmp_path: Path) -> None:
     assert items[0].status == "skipped_existing"
 
 
+def test_scan_export_queue_uses_collision_safe_single_output(tmp_path: Path) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    input_dir.mkdir()
+    output_dir.mkdir()
+    source = input_dir / "asset.png"
+    existing = output_dir / "asset_alpha.png"
+    _write_image(source)
+    _write_image(existing)
+
+    items = scan_export_queue(
+        source,
+        output_dir,
+        ProcessingOptions(output_format="png", overwrite=False),
+        mode="single",
+    )
+
+    assert len(items) == 1
+    assert items[0].input_path == source.resolve()
+    assert items[0].output_path == (output_dir / "asset_alpha_2.png").resolve()
+    assert items[0].status == "pending"
+
+
 def test_process_files_handles_explicit_retry_queue(tmp_path: Path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
@@ -63,4 +86,5 @@ def test_process_files_collects_missing_retry_inputs(tmp_path: Path) -> None:
 
 def test_failed_input_paths_extracts_paths() -> None:
     paths = failed_input_paths((r"C:\assets\bad.png: cannot decode image",))
+
     assert paths == (Path(r"C:\assets\bad.png"),)
