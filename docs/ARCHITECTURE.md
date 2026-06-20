@@ -8,6 +8,7 @@ GUI / CLI
     -> alpha processor
       -> Pillow operations
       -> optional rembg background removal
+      -> alpha cleanup and visual effects
   -> output naming / validation
   -> optional Resolume API client
 ```
@@ -32,6 +33,9 @@ Responsible for:
 - edge feathering
 - alpha gamma
 - despill
+- invert alpha
+- auto-crop and transparent padding
+- outline / glow / shadow effects
 - canvas fitting
 - export
 
@@ -44,6 +48,7 @@ Responsible for:
 - generating output names
 - calling `process_file`
 - collecting batch summary/errors
+- supporting safe cancel checks for GUI batch runs
 
 ### `cli.py`
 
@@ -51,7 +56,7 @@ Thin command layer. Converts user args into `ProcessingOptions`.
 
 ### `app.py`
 
-Tkinter desktop app. Runs processing in a background thread so the UI does not freeze.
+Tkinter desktop app. Runs preview and export work in background threads so the UI does not freeze.
 
 ### `resolume_api.py`
 
