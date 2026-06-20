@@ -16,7 +16,9 @@ image/folder in
 
 ## Features
 
-- Tkinter desktop GUI with input preview, processed preview, presets, logs, and explicit **Export** action.
+- Tkinter desktop GUI with input preview, processed preview, presets, logs, progress, cancel, and explicit **Export** action.
+- GUI state persistence for last-used paths, settings, selected preset, and window geometry.
+- User preset manager with save, delete, import, and export support.
 - Local processing pipeline for transparent PNG/WebP assets.
 - Optional `rembg` backend for AI background removal.
 - Alpha cleanup controls:
@@ -25,7 +27,7 @@ image/folder in
   - gamma correction
   - matte/despill cleanup
   - transparent-pixel RGB cleanup
-- Batch folder processing.
+- Batch folder processing, including optional recursive batch mode in the GUI.
 - Watch-folder mode for auto-processing new files.
 - CLI for automation and power users.
 - `rembg-check` command for local background-removal diagnostics.
@@ -132,10 +134,12 @@ Short version:
 
 1. Select **File** or **Folder** input.
 2. Choose an **Output folder**.
-3. Adjust cleanup/export settings.
-4. Use **Preview**.
-5. Click **Export**.
-6. Import/drag the exported PNG/WebP into Resolume.
+3. Pick or save a preset.
+4. Adjust cleanup/export settings.
+5. Use **Preview**.
+6. Click **Export**.
+7. Check progress and final summary.
+8. Import/drag the exported PNG/WebP into Resolume.
 
 ## Resolume workflow
 
@@ -163,9 +167,11 @@ src/resolume_alpha_tool/
     batch.py
     exceptions.py
     file_watcher.py
+    gui_settings.py
     input_resolver.py
     models.py
     naming.py
+    preset_store.py
     presets.py
     rembg_runtime.py
     resolume_api.py
