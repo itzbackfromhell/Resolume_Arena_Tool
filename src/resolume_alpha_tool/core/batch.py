@@ -59,9 +59,10 @@ def process_directory(
 
     for index, image_path in enumerate(images):
         if should_cancel and should_cancel():
-            skipped += len(images) - index
+            remaining = len(images) - index
+            skipped += remaining
             if on_progress:
-                on_progress("CANCELLED batch export")
+                on_progress(f"CANCELLED batch export; skipped remaining={remaining}")
             break
         try:
             output_path = build_output_path(
@@ -73,6 +74,8 @@ def process_directory(
             )
             if output_path.exists() and not options.overwrite:
                 skipped += 1
+                if on_progress:
+                    on_progress(f"Skipped existing {output_path.name}")
                 continue
             if on_progress:
                 on_progress(f"Processing {image_path.name}")
