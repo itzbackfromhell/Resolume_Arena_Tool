@@ -8,7 +8,7 @@ Resolume Alpha Dropper is a local desktop tool. It does not download exports fro
 2. Select an input with **File** or **Folder**.
 3. Choose an **Output folder**.
 4. Choose or create a preset.
-5. Adjust alpha cleanup and export options.
+5. Adjust alpha cleanup, alpha effects, and export options.
 6. Use **Preview** to check the processed result.
 7. Click **Export**.
 
@@ -20,7 +20,7 @@ The GUI saves its last-used state when an export starts and when the window clos
 - output folder
 - mode
 - selected preset
-- cleanup/export values
+- cleanup/effect/export values
 - overwrite / recursive batch / open-folder settings
 - window geometry
 
@@ -39,6 +39,20 @@ The GUI also supports user presets:
 - **Export Selected** writes the active preset to a JSON file.
 
 A user preset can shadow a bundled preset with the same name. Deleting the user preset reveals the bundled preset again.
+
+## Alpha effects
+
+The **Alpha effects** panel runs after alpha cleanup and before canvas fitting:
+
+- **Invert alpha** flips the mask.
+- **Auto-crop alpha** trims empty transparent bounds.
+- **Padding** adds transparent space around the asset.
+- **Outline** adds an outer stroke.
+- **Glow** adds a blurred glow behind the asset.
+- **Shadow** adds a blurred offset shadow.
+- **Shadow X/Y** controls shadow offset.
+
+Effect margins are added automatically so outline, glow, and shadow have room before final canvas fitting.
 
 ## Export behavior
 
