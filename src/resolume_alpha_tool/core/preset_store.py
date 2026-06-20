@@ -31,15 +31,23 @@ def normalize_preset(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 def normalize_presets(raw: dict[str, Any]) -> dict[str, dict[str, Any]]:
-    """Normalize a mapping of preset names to preset values."""
+    """Normalize a mapping of preset names to preset values.
+
+    One bad user-preset entry must not kill the whole preset file. Invalid names,
+    non-object values, and empty presets are skipped so the GUI can still boot.
+    """
 
     normalized: dict[str, dict[str, Any]] = {}
     for name, preset in raw.items():
-        if isinstance(name, str) and isinstance(preset, dict):
+        if not isinstance(name, str) or not isinstance(preset, dict):
+            continue
+        try:
             cleaned = clean_preset_name(name)
-            values = normalize_preset(preset)
-            if values:
-                normalized[cleaned] = values
+        except ValueError:
+            continue
+        values = normalize_preset(preset)
+        if values:
+            normalized[cleaned] = values
     return normalized
 
 
