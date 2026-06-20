@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -27,6 +28,32 @@ def canonical_output_path(input_path: Path, output_dir: Path, options: Processin
 
     clean_ext = options.output_format.lower().lstrip(".")
     return output_dir / f"{input_path.stem}{options.normalized_suffix()}.{clean_ext}"
+
+
+def explicit_file_queue_item(
+    input_path: Path,
+    output_dir: Path,
+    options: ProcessingOptions,
+) -> QueueItem:
+    """Build the preview item for one explicit-file export entry."""
+
+    source = input_path.expanduser().resolve()
+    output_path = canonical_output_path(source, output_dir, options)
+    status: QueueStatus = (
+        "skipped_existing" if output_path.exists() and not options.overwrite else "pending"
+    )
+    return QueueItem(input_path=source, output_path=output_path, status=status)
+
+
+def scan_file_export_queue(
+    input_paths: Iterable[Path],
+    output_dir: Path,
+    options: ProcessingOptions,
+) -> tuple[QueueItem, ...]:
+    """Build a queue preview for an explicit list of files, such as retry exports."""
+
+    target = output_dir.expanduser().resolve()
+    return tuple(explicit_file_queue_item(path, target, options) for path in input_paths)
 
 
 def scan_input_images(input_path: Path, *, mode: str, recursive: bool = False) -> tuple[Path, ...]:
