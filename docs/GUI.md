@@ -15,6 +15,18 @@ The GUI does not modify Resolume, inject into Resolume, or require Resolume to b
 3. Pick **Resolume** or **Shirt/Print**.
 4. Click the convert button.
 
+## Dark interface
+
+The desktop UI uses a built-in dark theme by default:
+
+- dark root window and panels
+- dark text fields
+- dark preview placeholders
+- dark alpha checkerboard preview
+- blue accent buttons and selected controls
+
+This is a fixed app theme, not an operating-system setting.
+
 ## Export modes
 
 ### Resolume
