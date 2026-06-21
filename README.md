@@ -4,7 +4,7 @@
 
 ```text
 one image in
-  -> local background removal
+  -> required local background removal with rembg
   -> transparent 1920x1080 PNG export
   -> drag/import into Resolume
 ```
@@ -33,6 +33,7 @@ The app does exactly one job:
 - fit the result onto a transparent 1920x1080 canvas
 - save a PNG with the `_resolume` suffix
 - avoid overwriting existing files by using numbered collision-safe names
+- refuse exports when background removal is disabled, missing, or produces a fully opaque/empty alpha result
 
 Batch export, queue preview, retry-failed, presets, reports, watch-folder mode, Resolume REST checks, and power-user export controls have been removed from the focused app path.
 
@@ -74,6 +75,14 @@ Convert one image from PowerShell:
 ```powershell
 python -m resolume_alpha_tool.cli convert input.jpg output
 ```
+
+## Portable EXE build
+
+```powershell
+.\scripts\build_portable.ps1
+```
+
+The build script runs tests, checks the required `rembg` backend, and asks PyInstaller to collect the rembg/ONNX runtime packages.
 
 ## Tests and quality gates
 

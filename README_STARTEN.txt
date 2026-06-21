@@ -10,6 +10,8 @@ Resolume Alpha Dropper - Starten
 
 Wichtig:
 - Die GUI ist absichtlich simpel: ein Bild rein, Background weg, Resolume-PNG raus.
+- Background Removal ist Pflicht. Wenn rembg/onnxruntime nicht funktioniert, bricht der Export mit Fehler ab.
+- Die App prueft, dass der Export PNG, 1920x1080 und transparent ist.
 - Die App veraendert Resolume nicht.
 - Exporte landen im Ordner output, wenn kein anderer Output-Ordner gewaehlt wird.
 - Es wird nicht ueberschrieben; existierende Zieldateien bekommen automatisch nummerierte Namen.

@@ -39,6 +39,8 @@ if (-not $SkipTests) {
     Invoke-Checked "Run tests" { python -m pytest }
 }
 
+Invoke-Checked "Check required background-removal backend" { python -m resolume_alpha_tool.cli rembg-check }
+
 Remove-Item -Recurse -Force "dist", "build" -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force $AppDir -ErrorAction SilentlyContinue
 Remove-Item -Force $ZipPath -ErrorAction SilentlyContinue
@@ -48,6 +50,12 @@ New-Item -ItemType Directory -Force (Join-Path $AppDir "output") | Out-Null
 Invoke-Checked "Build PyInstaller executable" {
     python -m PyInstaller --noconfirm --clean --onefile --windowed `
         --name ResolumeAlphaDropper `
+        --collect-all rembg `
+        --collect-all onnxruntime `
+        --collect-all pymatting `
+        --collect-all skimage `
+        --collect-all scipy `
+        --collect-all numpy `
         src\resolume_alpha_tool\app.py
 }
 
