@@ -21,9 +21,10 @@ function Invoke-Checked {
 $Root = Resolve-Path (Join-Path $PSScriptRoot "..")
 Set-Location $Root
 
+$AppName = "AlphaPngExporter"
 $ReleaseRoot = Join-Path $Root "release"
-$AppDir = Join-Path $ReleaseRoot "ResolumeAlphaDropper"
-$ZipPath = Join-Path $ReleaseRoot "ResolumeAlphaDropper_Portable.zip"
+$AppDir = Join-Path $ReleaseRoot $AppName
+$ZipPath = Join-Path $ReleaseRoot "$($AppName)_Portable.zip"
 
 if (-not (Test-Path ".venv")) {
     Invoke-Checked "Create virtual environment" { py "-$PythonTag" -m venv .venv }
@@ -54,7 +55,7 @@ New-Item -ItemType Directory -Force (Join-Path $AppDir "output") | Out-Null
 
 Invoke-Checked "Build PyInstaller executable" {
     python -m PyInstaller --noconfirm --clean --onefile --windowed `
-        --name ResolumeAlphaDropper `
+        --name $AppName `
         --collect-all rembg `
         --collect-all onnxruntime `
         --collect-all pymatting `
@@ -64,7 +65,7 @@ Invoke-Checked "Build PyInstaller executable" {
         src\resolume_alpha_tool\app.py
 }
 
-Copy-Item "dist\ResolumeAlphaDropper.exe" (Join-Path $AppDir "ResolumeAlphaDropper.exe") -Force
+Copy-Item "dist\$AppName.exe" (Join-Path $AppDir "$AppName.exe") -Force
 Copy-Item "README_STARTEN.txt" (Join-Path $AppDir "README_STARTEN.txt") -Force
 
 Compress-Archive -Path (Join-Path $AppDir "*") -DestinationPath $ZipPath -Force
