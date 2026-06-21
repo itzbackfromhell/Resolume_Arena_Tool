@@ -43,14 +43,20 @@ def test_process_image_erodes_alpha_edge() -> None:
     assert out.getpixel((2, 2))[3] == 255
 
 
-def test_process_image_dilates_alpha_edge() -> None:
-    img = Image.new("RGBA", (5, 5), (255, 255, 255, 0))
-    img.putpixel((2, 2), (255, 255, 255, 255))
+def test_process_image_dilates_alpha_edge(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    matte = Image.new("RGBA", (5, 5), (255, 255, 255, 0))
+    matte.putpixel((2, 2), (255, 255, 255, 255))
+    img = Image.new("RGB", (5, 5), (255, 255, 255))
+
+    monkeypatch.setattr(
+        "resolume_alpha_tool.core.alpha_processor._remove_background_with_rembg",
+        lambda _image, _model: matte,
+    )
 
     out = process_image_object(
         img,
         ProcessingOptions(
-            remove_background=False,
+            remove_background=True,
             alpha_threshold=0,
             feather_radius=0,
             despill_strength=0,
