@@ -3,11 +3,31 @@ import json
 from resolume_alpha_tool.core import gui_settings
 
 
-def test_gui_settings_uses_override_config_dir(tmp_path, monkeypatch) -> None:
-    monkeypatch.setenv("RESOLUME_ALPHA_DROPPER_CONFIG_DIR", str(tmp_path))
+def test_gui_settings_uses_current_override_config_dir(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("ALPHA_PNG_EXPORTER_CONFIG_DIR", str(tmp_path))
     assert gui_settings.config_dir() == tmp_path
     assert gui_settings.settings_path() == tmp_path / "settings.json"
     assert gui_settings.user_presets_path() == tmp_path / "user_presets.json"
+
+
+def test_gui_settings_keeps_legacy_override_config_dir(tmp_path, monkeypatch) -> None:
+    monkeypatch.delenv("ALPHA_PNG_EXPORTER_CONFIG_DIR", raising=False)
+    monkeypatch.setenv("RESOLUME_ALPHA_DROPPER_CONFIG_DIR", str(tmp_path))
+    assert gui_settings.config_dir() == tmp_path
+
+
+def test_pick_config_dir_prefers_existing_legacy_dir(tmp_path) -> None:
+    legacy = tmp_path / gui_settings.LEGACY_APP_DIR_NAME
+    legacy.mkdir()
+    assert gui_settings._pick_config_dir(tmp_path) == legacy
+
+
+def test_pick_config_dir_prefers_current_dir_when_it_exists(tmp_path) -> None:
+    current = tmp_path / gui_settings.APP_DIR_NAME
+    legacy = tmp_path / gui_settings.LEGACY_APP_DIR_NAME
+    current.mkdir()
+    legacy.mkdir()
+    assert gui_settings._pick_config_dir(tmp_path) == current
 
 
 def test_json_object_roundtrip(tmp_path) -> None:
