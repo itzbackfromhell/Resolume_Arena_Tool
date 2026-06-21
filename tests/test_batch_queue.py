@@ -61,6 +61,36 @@ def test_scan_export_queue_uses_collision_safe_single_output(tmp_path: Path) -> 
     assert items[0].status == "pending"
 
 
+def test_scan_export_queue_marks_duplicate_batch_outputs_as_skipped(tmp_path: Path) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    first_dir = input_dir / "a"
+    second_dir = input_dir / "b"
+    first_dir.mkdir(parents=True)
+    second_dir.mkdir(parents=True)
+    output_dir.mkdir()
+    first = first_dir / "asset.png"
+    second = second_dir / "asset.png"
+    _write_image(first)
+    _write_image(second)
+
+    items = scan_export_queue(
+        input_dir,
+        output_dir,
+        ProcessingOptions(output_format="png", overwrite=False),
+        mode="batch",
+        recursive=True,
+    )
+
+    assert len(items) == 2
+    assert items[0].input_path == first.resolve()
+    assert items[0].output_path == (output_dir / "asset_alpha.png").resolve()
+    assert items[0].status == "pending"
+    assert items[1].input_path == second.resolve()
+    assert items[1].output_path == (output_dir / "asset_alpha.png").resolve()
+    assert items[1].status == "skipped_existing"
+
+
 def test_scan_file_export_queue_uses_retry_export_naming(tmp_path: Path) -> None:
     input_dir = tmp_path / "input"
     output_dir = tmp_path / "output"
@@ -101,6 +131,34 @@ def test_scan_file_export_queue_marks_retry_collisions_as_skipped(tmp_path: Path
     assert items[0].input_path == source.resolve()
     assert items[0].output_path == existing.resolve()
     assert items[0].status == "skipped_existing"
+
+
+def test_scan_file_export_queue_marks_duplicate_retry_outputs_as_skipped(tmp_path: Path) -> None:
+    input_dir = tmp_path / "input"
+    output_dir = tmp_path / "output"
+    first_dir = input_dir / "a"
+    second_dir = input_dir / "b"
+    first_dir.mkdir(parents=True)
+    second_dir.mkdir(parents=True)
+    output_dir.mkdir()
+    first = first_dir / "retry.png"
+    second = second_dir / "retry.png"
+    _write_image(first)
+    _write_image(second)
+
+    items = scan_file_export_queue(
+        [first, second],
+        output_dir,
+        ProcessingOptions(output_format="png", overwrite=False),
+    )
+
+    assert len(items) == 2
+    assert items[0].input_path == first.resolve()
+    assert items[0].output_path == (output_dir / "retry_alpha.png").resolve()
+    assert items[0].status == "pending"
+    assert items[1].input_path == second.resolve()
+    assert items[1].output_path == (output_dir / "retry_alpha.png").resolve()
+    assert items[1].status == "skipped_existing"
 
 
 def test_scan_file_export_queue_keeps_missing_retry_inputs_previewable(tmp_path: Path) -> None:

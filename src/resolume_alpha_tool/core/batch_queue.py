@@ -30,6 +30,29 @@ def canonical_output_path(input_path: Path, output_dir: Path, options: Processin
     return output_dir / f"{input_path.stem}{options.normalized_suffix()}.{clean_ext}"
 
 
+def _planned_output_status(
+    output_path: Path,
+    options: ProcessingOptions,
+    claimed_outputs: set[Path],
+) -> QueueStatus:
+    """Return how a planned output path will behave during export."""
+
+    if options.overwrite:
+        return "pending"
+    if output_path.exists() or output_path in claimed_outputs:
+        return "skipped_existing"
+    return "pending"
+
+
+def _remember_pending_output(
+    output_path: Path,
+    status: QueueStatus,
+    claimed_outputs: set[Path],
+) -> None:
+    if status == "pending":
+        claimed_outputs.add(output_path)
+
+
 def explicit_file_queue_item(
     input_path: Path,
     output_dir: Path,
@@ -39,9 +62,7 @@ def explicit_file_queue_item(
 
     source = input_path.expanduser().resolve()
     output_path = canonical_output_path(source, output_dir, options)
-    status: QueueStatus = (
-        "skipped_existing" if output_path.exists() and not options.overwrite else "pending"
-    )
+    status = _planned_output_status(output_path, options, set())
     return QueueItem(input_path=source, output_path=output_path, status=status)
 
 
@@ -53,7 +74,15 @@ def scan_file_export_queue(
     """Build a queue preview for an explicit list of files, such as retry exports."""
 
     target = output_dir.expanduser().resolve()
-    return tuple(explicit_file_queue_item(path, target, options) for path in input_paths)
+    claimed_outputs: set[Path] = set()
+    items: list[QueueItem] = []
+    for input_path in input_paths:
+        source = input_path.expanduser().resolve()
+        output_path = canonical_output_path(source, target, options)
+        status = _planned_output_status(output_path, options, claimed_outputs)
+        _remember_pending_output(output_path, status, claimed_outputs)
+        items.append(QueueItem(input_path=source, output_path=output_path, status=status))
+    return tuple(items)
 
 
 def scan_input_images(input_path: Path, *, mode: str, recursive: bool = False) -> tuple[Path, ...]:
@@ -87,6 +116,7 @@ def scan_export_queue(
     target = output_dir.expanduser().resolve()
     images = scan_input_images(input_path, mode=mode, recursive=recursive)
     items: list[QueueItem] = []
+    claimed_outputs: set[Path] = set()
     for image_path in images:
         if mode == "single":
             output_path = build_output_path(
@@ -99,7 +129,8 @@ def scan_export_queue(
             status: QueueStatus = "pending"
         else:
             output_path = canonical_output_path(image_path, target, options)
-            status = "skipped_existing" if output_path.exists() and not options.overwrite else "pending"
+            status = _planned_output_status(output_path, options, claimed_outputs)
+            _remember_pending_output(output_path, status, claimed_outputs)
         items.append(QueueItem(input_path=image_path, output_path=output_path, status=status))
     return tuple(items)
 
