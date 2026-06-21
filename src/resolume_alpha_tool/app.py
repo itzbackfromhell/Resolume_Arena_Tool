@@ -53,7 +53,7 @@ class AlphaDropperApp(tk.Tk):
 
     def __init__(self) -> None:
         super().__init__()
-        self.title("Resolume Alpha Dropper")
+        self.title("Alpha PNG Exporter")
         self.geometry("900x690")
         self.minsize(800, 620)
 
@@ -236,7 +236,11 @@ class AlphaDropperApp(tk.Tk):
         return Path(raw).expanduser() if raw else Path.cwd() / "output"
 
     def _export_target(self) -> ExportTarget:
-        return normalize_export_target(self.export_target_var.get())
+        try:
+            return normalize_export_target(self.export_target_var.get())
+        except Exception:
+            self.export_target_var.set("resolume")
+            return "resolume"
 
     def _update_mode_help(self) -> None:
         target = self._export_target()
@@ -244,10 +248,13 @@ class AlphaDropperApp(tk.Tk):
             self.mode_help_var.set(
                 "Transparent PNG for print shops: tighter crop, harder alpha edge, padded motif, no 1920x1080 canvas."
             )
-            self.export_button.configure(text="Convert for Shirt/Print")
+            button_text = "Convert for Shirt/Print"
         else:
             self.mode_help_var.set("Transparent 1920x1080 PNG for Resolume Arena/Avenue visuals.")
-            self.export_button.configure(text="Convert for Resolume")
+            button_text = "Convert for Resolume"
+
+        if hasattr(self, "export_button"):
+            self.export_button.configure(text=button_text)
 
     def _update_input_status(self) -> None:
         path = self._input_path()
@@ -281,11 +288,12 @@ class AlphaDropperApp(tk.Tk):
             return
         try:
             source = ensure_file(input_path)
+            target = self._export_target()
         except Exception as exc:
             messagebox.showerror("Invalid input", str(exc))
             return
 
-        job = ExportJob(input_path=source, output_dir=self._output_dir(), target=self._export_target())
+        job = ExportJob(input_path=source, output_dir=self._output_dir(), target=target)
         self._save_settings()
         self.export_button.configure(state=tk.DISABLED)
         label = TARGET_LABELS[job.target]
