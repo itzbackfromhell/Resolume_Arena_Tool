@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 
 from PIL import Image
@@ -18,6 +19,39 @@ def test_cli_convert_reports_project_errors(monkeypatch, capsys) -> None:  # typ
     captured = capsys.readouterr()
     assert exit_code == 1
     assert "ERROR: boom" in captured.err
+
+
+def test_cli_convert_verbose_reports_debug_detail(monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
+    def fake_export(*_args, **_kwargs):
+        raise ProcessingError("boom")
+
+    monkeypatch.setattr(cli, "export_alpha_image", fake_export)
+
+    exit_code = cli.main(["convert", "input.png", "out", "--verbose", "--no-log-file"])
+
+    captured = capsys.readouterr()
+    assert exit_code == 1
+    assert "ERROR: boom" in captured.err
+    assert "DETAIL: ProcessingError: boom" in captured.err
+
+
+def test_cli_runtime_flags_configure_logging(monkeypatch) -> None:  # type: ignore[no-untyped-def]
+    calls: list[tuple[bool, bool]] = []
+
+    def fake_logging_config(*, verbose: bool, log_to_file: bool) -> logging.Logger:
+        calls.append((verbose, log_to_file))
+        return logging.getLogger("test_cli_runtime_flags")
+
+    def fake_export(*_args, **_kwargs):
+        return type("Result", (), {"output_path": Path("out/asset.png"), "width": 8, "height": 8})()
+
+    monkeypatch.setattr(cli, "configure_logging", fake_logging_config)
+    monkeypatch.setattr(cli, "export_alpha_image", fake_export)
+
+    exit_code = cli.main(["convert", "input.png", "out", "--no-log-file"])
+
+    assert exit_code == 0
+    assert calls == [(False, False)]
 
 
 def test_cli_batch_reports_summary(monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
