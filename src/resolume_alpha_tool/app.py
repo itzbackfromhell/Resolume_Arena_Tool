@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import queue
 import subprocess
@@ -116,10 +117,8 @@ class AlphaDropperApp(tk.Tk):
         self.option_add("*insertBackground", DARK_THEME["text"])
 
         style = ttk.Style(self)
-        try:
+        with contextlib.suppress(tk.TclError):
             style.theme_use("clam")
-        except tk.TclError:
-            pass
 
         style.configure(
             ".",
