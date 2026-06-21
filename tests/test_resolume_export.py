@@ -5,6 +5,7 @@ from PIL import Image
 
 from resolume_alpha_tool.core.exceptions import ProcessingError
 from resolume_alpha_tool.core.resolume_export import (
+    RESOLUME_4K_CANVAS_SIZE,
     RESOLUME_CANVAS_SIZE,
     RESOLUME_OUTPUT_FORMAT,
     RESOLUME_OUTPUT_SUFFIX,
@@ -14,6 +15,7 @@ from resolume_alpha_tool.core.resolume_export import (
     export_alpha_image,
     export_resolume_image,
     normalize_export_target,
+    normalize_resolume_preset,
     processing_options_for_target,
     resolume_processing_options,
     shirt_print_processing_options,
@@ -42,6 +44,22 @@ def test_resolume_processing_options_are_fixed() -> None:
     assert options.overwrite is False
 
 
+def test_resolume_processing_options_support_4k_preset() -> None:
+    options = resolume_processing_options(canvas_size=normalize_resolume_preset("4k"))
+
+    assert (options.canvas_width, options.canvas_height) == RESOLUME_4K_CANVAS_SIZE
+
+
+def test_edge_cleanup_profiles_are_safe_small_steps() -> None:
+    tight = shirt_print_processing_options(edge_profile="tight")
+    grow = resolume_processing_options(edge_profile="grow")
+
+    assert tight.alpha_erode == 1
+    assert tight.alpha_dilate == 0
+    assert grow.alpha_erode == 0
+    assert grow.alpha_dilate == 1
+
+
 def test_shirt_print_processing_options_are_fixed() -> None:
     options = shirt_print_processing_options()
 
@@ -54,6 +72,10 @@ def test_shirt_print_processing_options_are_fixed() -> None:
     assert options.canvas_width is None
     assert options.canvas_height is None
     assert options.alpha_threshold > resolume_processing_options().alpha_threshold
+
+
+def test_shirt_print_processing_options_accept_padding_override() -> None:
+    assert shirt_print_processing_options(padding=24).padding == 24
 
 
 def test_normalize_export_target_accepts_cli_spelling() -> None:
@@ -135,6 +157,25 @@ def test_export_resolume_image_writes_valid_background_removed_png(
         assert image.format == "PNG"
         assert image.size == RESOLUME_CANVAS_SIZE
         assert image.convert("RGBA").getchannel("A").getextrema()[0] < 255
+
+
+def test_export_alpha_image_writes_custom_4k_resolume_png(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    input_path = tmp_path / "asset.png"
+    output_dir = tmp_path / "out"
+    _write_image(input_path)
+    monkeypatch.setattr(
+        "resolume_alpha_tool.core.alpha_processor._remove_background_with_rembg",
+        _fake_removed_background,
+    )
+    options = resolume_processing_options(canvas_size=RESOLUME_4K_CANVAS_SIZE)
+
+    result = export_alpha_image(input_path, output_dir, target="resolume", options=options)
+
+    assert result.width == 3840
+    assert result.height == 2160
 
 
 def test_export_alpha_image_writes_trimmed_shirt_print_png(
