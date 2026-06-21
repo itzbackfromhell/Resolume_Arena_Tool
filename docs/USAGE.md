@@ -2,95 +2,84 @@
 
 ## Recommended first workflow
 
-1. Install Python 3.11 or 3.12.
-2. Install the tool with `pip install -e ".[rembg]"`.
-3. Launch the GUI with `resolume-alpha-gui`.
-4. Select an image or folder.
-5. Export transparent PNGs into your Resolume asset folder.
-6. Drag the generated PNGs into Resolume.
+1. Install Python 3.11, 3.12, 3.13, or standard CPython 3.14.
+2. Install the tool with `pip install -e ".[dev,rembg]"`.
+3. Run `alpha-png rembg-check` once before a real export.
+4. Launch the GUI with `alpha-png-gui` or use the CLI examples below.
+5. Export transparent PNGs into a normal asset folder and drag them into Resolume.
 
 ## Good Resolume export defaults
 
 Use:
 
 - Format: `png`
+- Target: `resolume`
+- Preset: `1080p`
 - Fit: `contain`
-- Width: `1920`
-- Height: `1080`
-- Threshold: `8`
-- Feather: `0.8`
-- Despill: `0.35`
+- Edge profile: `normal`
+- Canvas: `1920x1080`
 
-For sharper logo-like assets:
+For sharper logo-like assets, use `--edge-profile tight`.
+For softer photo cutouts, use `--edge-profile soft`.
 
-- Threshold: `32`
-- Feather: `0`
-- Despill: `0.15`
+## CLI commands
 
-## Alpha effects
-
-Use these when the exported asset should be more VJ-ready without another editor:
-
-- `--auto-crop` trims transparent empty bounds.
-- `--padding 48` adds transparent room around the cutout.
-- `--outline 8` adds an outer stroke.
-- `--glow 18` adds a blurred glow.
-- `--shadow 14 --shadow-offset-x 12 --shadow-offset-y 12` adds a soft offset shadow.
-- `--invert-alpha` flips the alpha mask for special cases.
-
-Bundled effect presets:
-
-- `sticker_outline`
-- `vj_glow_1080p`
-- `shadow_cutout_1080p`
-
-## CLI examples
-
-Single image, no AI background removal, just alpha cleanup:
+### Single Resolume export
 
 ```powershell
-resolume-alpha remove .\input\logo.png .\output --preset clean
+alpha-png convert .\input\photo.jpg .\output --target resolume --preset 1080p --fit contain
 ```
 
-Single image with local background removal:
+### Single Shirt/Print export
+
+`remove` is kept as a compatibility alias for `convert`.
 
 ```powershell
-resolume-alpha remove .\input\photo.jpg .\output --remove-bg --preset resolume_1080p
+alpha-png remove .\input\photo.jpg .\output --target shirt-print --shirt-padding 96 --edge-profile tight
 ```
 
-Sticker-style cutout:
+### 4K or square Resolume canvas
 
 ```powershell
-resolume-alpha remove .\input\logo.png .\output --preset sticker_outline --overwrite
+alpha-png convert .\input\logo.png .\output --target resolume --preset 4k
+alpha-png convert .\input\logo.png .\output --target resolume --preset square-1080
 ```
 
-Manual glow setup:
+### Batch professional mode
 
 ```powershell
-resolume-alpha remove .\input\asset.png .\output --auto-crop --padding 64 --glow 18 --preset resolume_1080p
+alpha-png batch .\input .\output --recursive --target resolume --target shirt-print --report .\output\batch-report.json
 ```
 
-Batch:
+The batch command scans supported image formats, keeps stable folder-aware ordering, collects per-file failures instead of aborting the full run, and can write a JSON report for handoff or QA.
+
+### Output Validation 2.0
+
+Validate an already exported PNG against the selected target contract:
 
 ```powershell
-resolume-alpha batch .\input .\output --remove-bg --preset resolume_1080p
+alpha-png validate .\output\asset_resolume.png --target resolume --preset 1080p
+alpha-png validate .\output\asset_shirt_print.png --target shirt-print
 ```
 
-Watch folder:
+The validator checks PNG format, alpha transparency, target dimensions, visible alpha coverage, and suspicious alpha bounds.
+
+### Backend and version checks
 
 ```powershell
-resolume-alpha watch .\watch_in .\watch_out --remove-bg --preset resolume_1080p
+alpha-png rembg-check
+alpha-png version
 ```
 
-## Resolume connectivity check
+## Important options
 
-Enable the webserver in Resolume, then:
-
-```powershell
-resolume-alpha resolume --host 127.0.0.1 --port 8080
-```
-
-This only checks reachability. Automatic clip import/triggering is intentionally left as a later integration layer because composition layouts differ.
+- `--model`: rembg model name. Defaults to `u2net`.
+- `--preset`: Resolume canvas preset: `1080p`, `4k`, `square-1080`.
+- `--fit`: Resolume fit mode: `contain`, `cover`, `stretch`.
+- `--edge-profile`: alpha cleanup profile: `normal`, `soft`, `tight`, `grow`.
+- `--shirt-padding`: transparent padding in pixels for shirt/print exports.
+- `--overwrite`: replace an existing output file instead of using collision-safe naming.
+- `--report`: JSON batch report path for batch mode.
 
 ## Troubleshooting
 
@@ -104,34 +93,20 @@ pip install -e ".[rembg]"
 
 ### First run is slow
 
-`rembg` downloads model files on first use. Later runs are faster.
+`rembg` may download model files on first use. Later runs are faster.
 
-### White/bright edge halos
+### White or bright edge halos
 
-Increase despill slightly:
-
-```powershell
---despill 0.45
-```
-
-or try:
+Try a tighter edge profile:
 
 ```powershell
---preset soft_edge
+--edge-profile tight
 ```
 
 ### Hard jagged edges
 
-Increase feather slightly:
+Try a softer edge profile:
 
 ```powershell
---feather 1.2
-```
-
-### Logos look blurry
-
-Use hard cut:
-
-```powershell
---preset hard_cut
+--edge-profile soft
 ```
