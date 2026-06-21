@@ -5,14 +5,14 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resolume-alpha-dropper"
 version = "0.1.1"
-description = "Local-first single-image transparent PNG creator for Resolume Arena/Avenue workflows."
+description = "Local-first single-image transparent PNG exporter for Resolume and shirt/print workflows."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 license = {text = "MIT"}
 authors = [
   {name = "Nils Kubicki"}
 ]
-keywords = ["resolume", "alpha", "background-removal", "png", "vj"]
+keywords = ["resolume", "alpha", "background-removal", "png", "shirt-print", "transparent-png", "vj"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Win32 (MS Windows)",
@@ -41,6 +41,8 @@ dev = [
 ]
 
 [project.scripts]
+alpha-png = "resolume_alpha_tool.cli:main"
+alpha-png-gui = "resolume_alpha_tool.app:main"
 resolume-alpha = "resolume_alpha_tool.cli:main"
 resolume-alpha-gui = "resolume_alpha_tool.app:main"
 
