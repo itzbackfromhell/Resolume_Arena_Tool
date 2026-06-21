@@ -11,7 +11,8 @@ from resolume_alpha_tool.core.batch_export import (
 
 
 def _write_image(path: Path) -> None:
-    Image.new("RGBA", (8, 8), (255, 255, 255, 255)).save(path)
+    mode = "RGB" if path.suffix.lower() in {".jpg", ".jpeg"} else "RGBA"
+    Image.new(mode, (8, 8), (255, 255, 255, 255)).save(path)
 
 
 def _fake_export(input_path: Path, output_dir: Path, **_kwargs):  # type: ignore[no-untyped-def]
