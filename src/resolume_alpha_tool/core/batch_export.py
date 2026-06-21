@@ -73,8 +73,26 @@ def normalize_batch_targets(values: Iterable[str]) -> tuple[ExportTarget, ...]:
     return tuple(targets)
 
 
+def _sort_key(root: Path, path: Path) -> str:
+    """Return a deterministic folder-aware sort key for batch inputs."""
+
+    try:
+        return path.relative_to(root).as_posix().lower()
+    except ValueError:
+        return path.as_posix().lower()
+
+
+def _display_source(root: Path, path: Path) -> str:
+    """Return a compact, folder-aware label for progress output."""
+
+    try:
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.name
+
+
 def discover_images(input_dir: Path, *, recursive: bool = False) -> tuple[Path, ...]:
-    """Return supported image files in stable name order."""
+    """Return supported image files in stable relative-path order."""
 
     root = input_dir.expanduser()
     if not root.exists():
@@ -88,7 +106,7 @@ def discover_images(input_dir: Path, *, recursive: bool = False) -> tuple[Path, 
         for path in iterator
         if path.is_file() and path.suffix.lower() in SUPPORTED_IMAGE_SUFFIXES
     ]
-    return tuple(sorted(images, key=lambda path: path.name.lower()))
+    return tuple(sorted(images, key=lambda path: _sort_key(root, path)))
 
 
 def export_batch(
@@ -98,7 +116,8 @@ def export_batch(
 ) -> BatchExportSummary:
     """Export every supported image in a folder, collecting per-file failures."""
 
-    sources = discover_images(request.input_dir, recursive=request.recursive)
+    input_root = request.input_dir.expanduser()
+    sources = discover_images(input_root, recursive=request.recursive)
     items: list[BatchExportItem] = []
     total_jobs = len(sources) * len(request.targets)
     completed_jobs = 0
@@ -107,10 +126,11 @@ def export_batch(
         on_progress(f"Found {len(sources)} supported image(s). Starting {total_jobs} export job(s).")
 
     for source in sources:
+        source_label = _display_source(input_root, source)
         for target in request.targets:
             completed_jobs += 1
             if on_progress:
-                on_progress(f"[{completed_jobs}/{total_jobs}] {source.name} -> {target}")
+                on_progress(f"[{completed_jobs}/{total_jobs}] {source_label} -> {target}")
             try:
                 result = export_alpha_image(
                     source,
@@ -124,7 +144,7 @@ def export_batch(
             except Exception as exc:
                 items.append(BatchExportItem(input_path=source, target=target, error=str(exc)))
                 if on_progress:
-                    on_progress(f"Failed {source.name} ({target}): {exc}")
+                    on_progress(f"Failed {source_label} ({target}): {exc}")
 
     return BatchExportSummary(
         input_dir=request.input_dir,
