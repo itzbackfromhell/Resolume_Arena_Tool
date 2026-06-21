@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "resolume-alpha-dropper"
-version = "0.2.0"
+version = "0.2.1"
 description = "Local-first transparent PNG exporter for Resolume, VJ, batch, and shirt/print workflows."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
