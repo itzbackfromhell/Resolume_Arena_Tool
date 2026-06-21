@@ -59,7 +59,32 @@ The CLI supports the same production-oriented export contracts as the GUI:
 - optional JSON batch report via `--report`
 - Output Validation 2.0 via `validate`
 - rembg runtime probe via `rembg-check`
+- actionable error output with recovery hints
+- optional debug failure details via `--verbose`
+- optional log suppression via `--no-log-file`
 - version output via `version`
+
+## Logging and error UX
+
+By default, CLI commands keep terminal output clean and write package logs to the per-user app config folder:
+
+```text
+%APPDATA%\AlphaPngExporter\alpha_png_exporter.log
+```
+
+Use `--verbose` after the subcommand to also print debug detail to stderr:
+
+```powershell
+alpha-png convert .\input\photo.jpg .\output --target resolume --verbose
+```
+
+Use `--no-log-file` when you want a completely quiet filesystem run:
+
+```powershell
+alpha-png validate .\output\asset_resolume.png --target resolume --no-log-file
+```
+
+Failures keep the stable `ERROR: ...` prefix and add a `HINT: ...` line with the next practical fix.
 
 ## Important Python version note
 
@@ -192,3 +217,7 @@ See [docs/GUI.md](docs/GUI.md).
 ## CLI docs
 
 See [docs/USAGE.md](docs/USAGE.md).
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
