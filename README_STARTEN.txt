@@ -2,7 +2,7 @@ Alpha PNG Exporter - Starten
 ============================
 
 1. ZIP entpacken.
-2. ResolumeAlphaDropper.exe starten.
+2. AlphaPngExporter.exe starten.
 3. Ein einzelnes Input-Bild waehlen.
 4. Output-Ordner pruefen oder auswaehlen.
 5. Export-Typ waehlen:
@@ -28,7 +28,7 @@ Fehlerdiagnose in der Entwickler-Version:
 
 Ordnerstruktur:
 
-ResolumeAlphaDropper/
-  ResolumeAlphaDropper.exe
+AlphaPngExporter/
+  AlphaPngExporter.exe
   output/
   README_STARTEN.txt
