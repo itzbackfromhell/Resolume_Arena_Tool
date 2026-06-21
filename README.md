@@ -1,268 +1,113 @@
 # Resolume Alpha Dropper
 
-**Resolume Alpha Dropper** is a local-first Windows-friendly toolkit for creating transparent image assets for Resolume Arena/Avenue workflows.
+**Resolume Alpha Dropper** is a local-first Windows-friendly tool for creating transparent image assets for Resolume Arena/Avenue workflows.
 
-It removes backgrounds, cleans alpha edges, adds visual alpha effects, previews/batches/queues exports, writes reports, and can optionally talk to a local Resolume webserver endpoint. No paid cloud API is required.
-
-## Core idea
+The current desktop GUI is intentionally simple:
 
 ```text
-image/folder in
-  -> optional local background removal
-  -> alpha cleanup / edge feather / matte despill
-  -> optional alpha effects: crop / padding / outline / glow / shadow
-  -> transparent PNG/WebP export
+one image in
+  -> local background removal
+  -> transparent 1920x1080 PNG export
   -> drag/import into Resolume
 ```
 
-## Features
+The app does not patch, inject into, or modify Resolume. It only writes image files into a normal output folder.
 
-- Tkinter desktop GUI with input preview, processed preview, presets, logs, progress, cancel, and explicit **Export** action.
-- GUI state persistence for last-used paths, settings, selected preset, and window geometry.
-- User preset manager with save, delete, import, and export support.
-- Batch queue preview, skipped-existing detection, retry-failed support, and JSON export reports.
-- Local processing pipeline for transparent PNG/WebP assets.
-- Optional `rembg` backend for AI background removal.
-- Alpha cleanup controls:
-  - threshold
-  - feather radius
-  - gamma correction
-  - matte/despill cleanup
-  - transparent-pixel RGB cleanup
-- Alpha effect controls:
-  - invert alpha
-  - auto-crop
-  - transparent padding
-  - outline
-  - glow
-  - shadow with X/Y offset
-- Batch folder processing, including optional recursive batch mode in the GUI.
-- Watch-folder mode for auto-processing new or changed files.
-- CLI for automation and power users.
-- `rembg-check` and `diagnostics` commands for local support.
-- Safe Resolume export workflow profiles.
-- Portable ZIP build scripts for Light and Full release variants.
-- CI, tests, docs, AGENTS.md, and build scripts included.
+## Current GUI scope
 
-## No-cost stack
+The GUI is the first clean user path and does exactly one job:
 
-The default workflow is local:
+- select one image
+- remove the background with the local `rembg` backend
+- fit the result onto a transparent 1920x1080 canvas
+- save a PNG with the `_resolume` suffix
+- avoid overwriting existing files by using numbered collision-safe names
 
-- Python
-- Pillow
-- optional `rembg[cpu]`
-- optional Resolume local webserver/OSC workflow later
+Advanced knobs, presets, batch queue, retry-failed, reports, and watch-folder controls are intentionally not exposed in the simplified GUI.
 
-`rembg` is optional and may depend on your Python, `onnxruntime`, and model-cache setup. Use `resolume-alpha rembg-check` to verify the local backend before using background removal in the GUI.
+## Core and CLI scope
 
-## Quick start
+The repository still contains reusable core services and CLI commands for automation/power-user workflows:
 
-### 1. Clone
+- single-image processing
+- batch folder processing
+- watch-folder processing
+- diagnostics
+- rembg runtime check
+- Resolume webserver healthcheck
+- workflow profiles
+
+## Install
 
 ```powershell
 git clone https://github.com/itzbackfromhell/Resolume_Arena_Tool.git
 cd Resolume_Arena_Tool
-```
-
-### 2. Create venv
-
-```powershell
-python -m venv .venv
-.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
+python -m pip install -e ".[dev,rembg]"
 ```
 
-### 3. Install
-
-Minimal install:
+Minimal install without background removal support:
 
 ```powershell
-pip install -e .
+python -m pip install -e .
 ```
 
-With local background removal:
-
-```powershell
-pip install -e ".[rembg]"
-```
-
-With developer tooling:
-
-```powershell
-pip install -e ".[dev]"
-```
-
-Recommended local dev install:
-
-```powershell
-pip install -e ".[dev,rembg]"
-```
-
-### 4. Launch GUI
-
-```powershell
-resolume-alpha-gui
-```
-
-or directly from source:
+## Launch GUI
 
 ```powershell
 python -m resolume_alpha_tool.app
 ```
 
-### 5. Use CLI
-
-Check background-removal backend:
+or, after installing console scripts:
 
 ```powershell
-resolume-alpha rembg-check
+resolume-alpha-gui
 ```
 
-Create a diagnostics report:
+## Verify background removal
+
+The GUI depends on the optional local `rembg` backend for background removal. Check it with:
 
 ```powershell
-resolume-alpha diagnostics
+python -m resolume_alpha_tool.cli rembg-check
 ```
 
-List Resolume workflow profiles:
+The first run can take longer because the local model may need to load or download into the model cache.
 
-```powershell
-resolume-alpha profiles
-```
+## Useful CLI commands
 
 Single image:
 
 ```powershell
-resolume-alpha remove input.jpg output --remove-bg --preset clean --overwrite
-```
-
-Single image with effects:
-
-```powershell
-resolume-alpha remove input.png output --preset sticker_outline --auto-crop --padding 48 --outline 8
+python -m resolume_alpha_tool.cli remove input.jpg output --remove-bg --preset resolume_1080p
 ```
 
 Batch folder:
 
 ```powershell
-resolume-alpha batch input output --remove-bg --preset resolume_1080p
+python -m resolume_alpha_tool.cli batch input output --remove-bg --preset resolume_1080p
 ```
 
 Watch folder:
 
 ```powershell
-resolume-alpha watch input output --remove-bg --preset resolume_1080p
+python -m resolume_alpha_tool.cli watch input output --remove-bg --preset resolume_1080p
 ```
 
-## GUI workflow
-
-See [docs/GUI.md](docs/GUI.md).
-
-Short version:
-
-1. Select **File** or **Folder** input.
-2. Choose an **Output folder**.
-3. Pick or save a preset.
-4. Adjust cleanup/effect/export settings.
-5. Use **Preview**.
-6. Use **Refresh queue** for batch work.
-7. Click **Export**.
-8. Check progress, queue state, final summary, and JSON report.
-9. Import/drag the exported PNG/WebP into Resolume.
-
-## Resolume workflow
-
-Recommended first workflow:
-
-1. Export transparent PNGs into a dedicated folder, for example:
-
-   ```text
-   D:\ResolumeAssets\AlphaDropper
-   ```
-
-2. Drag/drop those files into Resolume Arena.
-3. Later enable Resolume's local webserver and wire the client integration.
-
-The app intentionally does **not** patch, modify, crack, or hook Resolume binaries. It creates clean alpha assets beside Resolume.
-
-## Project structure
-
-```text
-src/resolume_alpha_tool/
-  app.py              # Tkinter GUI
-  cli.py              # CLI entrypoint
-  core/
-    alpha_processor.py
-    batch.py
-    batch_queue.py
-    diagnostics.py
-    exceptions.py
-    export_report.py
-    file_watcher.py
-    gui_settings.py
-    input_resolver.py
-    models.py
-    naming.py
-    preset_store.py
-    presets.py
-    rembg_runtime.py
-    resources.py
-    resolume_api.py
-    resolume_profiles.py
-    validation.py
-presets/defaults.json
-README_STARTEN.txt
-docs/GUI.md
-docs/USAGE.md
-docs/ARCHITECTURE.md
-tests/
-scripts/build_windows.ps1
-scripts/build_portable.ps1
-scripts/smoke_portable.ps1
-```
-
-## Build Windows EXE
-
-Developer EXE:
+Diagnostics:
 
 ```powershell
-.\scripts\build_windows.ps1
+python -m resolume_alpha_tool.cli diagnostics
 ```
 
-Portable Light ZIP:
-
-```powershell
-.\scripts\build_portable.ps1 -Flavor Light
-```
-
-Portable Full ZIP with `rembg` extras:
-
-```powershell
-.\scripts\build_portable.ps1 -Flavor Full
-```
-
-Smoke-check portable folder:
-
-```powershell
-.\scripts\smoke_portable.ps1
-```
-
-## Quality gates
+## Tests and quality gates
 
 ```powershell
 python -m compileall -q src tests
-python -m pytest
 python -m ruff check .
+python -m pytest
 ```
 
-## Roadmap
+## GUI docs
 
-- v0.1: local alpha export, batch mode, GUI, CLI.
-- v0.2: preview UX, explicit export flow, input stability, rembg diagnostics.
-- v0.3: preset editor, queue/report workflow, and stronger GUI packaging.
-- v0.4: portable release foundation and safe Resolume workflow profiles.
-- v1.0: installer, signed builds, GPU presets, production performance profiles.
-
-## License
-
-MIT
+See [docs/GUI.md](docs/GUI.md).

@@ -1,117 +1,48 @@
 # GUI Workflow
 
-Resolume Alpha Dropper is a local desktop tool. It does not download exports from a server; it writes files directly to the selected output folder.
+Resolume Alpha Dropper's desktop GUI is intentionally focused for the first usable app version:
+
+```text
+one image in -> local background removal -> transparent 1920x1080 PNG out
+```
+
+The GUI does not modify Resolume, inject into Resolume, or require Resolume to be installed. It only creates a transparent asset file that can be dragged/imported into Resolume Arena/Avenue.
 
 ## Main flow
 
-1. Choose **Single image** or **Batch folder**.
-2. Select an input with **File** or **Folder**.
-3. Choose an **Output folder**.
-4. Choose or create a preset.
-5. Adjust alpha cleanup, alpha effects, and export options.
-6. Use **Preview** to check the processed result.
-7. Use **Refresh queue** to inspect planned batch work.
-8. Click **Export**.
+1. Click **Choose image** and select exactly one supported image.
+2. Click **Choose folder** if you do not want to use the default `output` folder.
+3. Click **Convert image for Resolume**.
+4. Drag/import the exported PNG into Resolume.
 
-## Persistent GUI state
+## Fixed GUI export settings
 
-The GUI saves its last-used state when an export starts and when the window closes:
+The GUI deliberately exposes no advanced knobs yet. Every GUI export uses the same deterministic Resolume-oriented settings:
 
-- input path
-- output folder
-- mode
-- selected preset
-- cleanup/effect/export values
-- overwrite / recursive batch / open-folder settings
-- window geometry
+- remove background: enabled
+- output format: PNG
+- canvas: 1920x1080
+- fit mode: contain
+- suffix: `_resolume`
+- overwrite: disabled
 
-User settings are stored outside the repository in the per-user config directory.
+If the target filename already exists, the app uses the collision-safe naming helper and writes a numbered output instead of overwriting user files.
 
-## Presets
+## Background removal dependency
 
-Bundled presets are loaded from `presets/defaults.json`.
+Background removal uses the optional local `rembg` backend. Install it before relying on the GUI:
 
-The GUI also supports user presets:
-
-- **Apply** loads the selected preset into the current controls.
-- **Save Current** stores the current controls as a user preset.
-- **Delete** removes user presets. Bundled presets are protected.
-- **Import** loads a JSON preset file.
-- **Export Selected** writes the active preset to a JSON file.
-
-A user preset can shadow a bundled preset with the same name. Deleting the user preset reveals the bundled preset again.
-
-## Alpha effects
-
-The **Alpha effects** panel runs after alpha cleanup and before canvas fitting:
-
-- **Invert alpha** flips the mask.
-- **Auto-crop alpha** trims empty transparent bounds.
-- **Padding** adds transparent space around the asset.
-- **Outline** adds an outer stroke.
-- **Glow** adds a blurred glow behind the asset.
-- **Shadow** adds a blurred offset shadow.
-- **Shadow X/Y** controls shadow offset.
-
-Effect margins are added automatically so outline, glow, and shadow have room before final canvas fitting.
-
-## Batch queue
-
-The **Batch Queue** table previews planned work before export:
-
-- `pending` means the file will be processed.
-- `skipped_existing` means the canonical output already exists and **Overwrite** is disabled.
-- `done` means export completed successfully.
-- `failed` means export failed for that input.
-
-Use **Refresh queue** after changing input, output, presets, overwrite, recursive mode, or export format.
-
-## Retry failed
-
-After an export with failures, **Retry failed** becomes available. It re-runs only failed input files with the current processing/export settings.
-
-## Export reports
-
-Every export writes a timestamped JSON report into the selected output folder:
-
-```text
-export_report_YYYYMMDD_HHMMSS.json
+```powershell
+python -m pip install -e ".[rembg]"
 ```
 
-The report includes:
-
-- mode
-- input path
-- output folder
-- processing options
-- processed / failed / skipped counts
-- exported output files
-- error strings
-- skipped-existing entries
-
-Use **Open report** to open the latest generated report.
-
-## Export behavior
-
-- Single-image export writes one PNG/WebP into the output folder.
-- Batch export writes one output file per supported image.
-- **Recursive batch** includes supported images in nested folders.
-- The progress bar updates as files are saved or skipped.
-- **Cancel** requests a safe stop. The current file may finish before the batch stops.
-- The summary line shows processed / failed / skipped counts after export.
-- The log shows `EXPORTED ...` after successful exports.
-- Enable **Open folder after export** to open Windows Explorer automatically after export.
-- **Open output** can be used any time to open the selected output folder manually.
-
-## Background removal
-
-`Remove background` uses the optional local `rembg` backend. Test it separately before relying on the GUI:
+Check the local model/runtime setup with:
 
 ```powershell
 python -m resolume_alpha_tool.cli rembg-check
 ```
 
-If the check fails, the issue is in the local `rembg`/`onnxruntime`/model-cache setup rather than the GUI export path.
+The first export can take longer because the local AI model may need to load or download into the local model cache.
 
 ## Supported input formats
 
@@ -121,6 +52,6 @@ If the check fails, the issue is in the local `rembg`/`onnxruntime`/model-cache 
 - BMP
 - TIFF
 
-## Safety rule
+## What moved out of the GUI
 
-The app does not modify Resolume binaries. It only creates transparent assets beside Resolume so they can be dragged/imported into Resolume Arena/Avenue.
+Batch export, queue preview, retry-failed, presets, reports, watch-folder mode, and power-user export controls are not part of the simplified GUI anymore. The core services and CLI can still keep automation features while the desktop app stays focused on the first clean user path.

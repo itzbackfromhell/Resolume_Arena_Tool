@@ -1,6 +1,13 @@
 import tkinter as tk
 
-from resolume_alpha_tool.app import AlphaDropperApp, ExportJob
+from resolume_alpha_tool.app import (
+    RESOLUME_CANVAS_SIZE,
+    RESOLUME_OUTPUT_FORMAT,
+    RESOLUME_OUTPUT_SUFFIX,
+    AlphaDropperApp,
+    ExportJob,
+    resolume_processing_options,
+)
 
 
 def test_gui_does_not_override_tk_options_internal() -> None:
@@ -8,25 +15,26 @@ def test_gui_does_not_override_tk_options_internal() -> None:
     assert callable(tk.Tk._options)
 
 
-def test_gui_export_flow_has_no_old_processing_aliases() -> None:
-    assert "_start_processing" not in AlphaDropperApp.__dict__
-    assert "_process_worker" not in AlphaDropperApp.__dict__
+def test_gui_is_single_image_only_contract() -> None:
     assert "_start_export" in AlphaDropperApp.__dict__
     assert "_export_worker_fn" in AlphaDropperApp.__dict__
+    assert "_browse_input" in AlphaDropperApp.__dict__
+    assert "_browse_output" in AlphaDropperApp.__dict__
+    assert "_refresh_queue" not in AlphaDropperApp.__dict__
+    assert "_retry_failed_export" not in AlphaDropperApp.__dict__
+    assert "_build_queue_panel" not in AlphaDropperApp.__dict__
+    assert "_save_current_preset" not in AlphaDropperApp.__dict__
 
 
-def test_gui_has_expected_usability_panels() -> None:
-    assert "_build_effect_panel" in AlphaDropperApp.__dict__
-    assert "_build_preset_panel" in AlphaDropperApp.__dict__
-    assert "_build_queue_panel" in AlphaDropperApp.__dict__
-    assert "_save_settings" in AlphaDropperApp.__dict__
-    assert "_cancel_export" in AlphaDropperApp.__dict__
+def test_resolume_processing_options_are_fixed_for_first_gui_version() -> None:
+    options = resolume_processing_options()
 
-
-def test_gui_has_batch_queue_actions() -> None:
-    assert "_refresh_queue" in AlphaDropperApp.__dict__
-    assert "_retry_failed_export" in AlphaDropperApp.__dict__
-    assert "_open_last_report" in AlphaDropperApp.__dict__
+    assert options.remove_background is True
+    assert options.output_format == RESOLUME_OUTPUT_FORMAT == "png"
+    assert options.suffix == RESOLUME_OUTPUT_SUFFIX == "_resolume"
+    assert options.fit_mode == "contain"
+    assert (options.canvas_width, options.canvas_height) == RESOLUME_CANVAS_SIZE == (1920, 1080)
+    assert options.overwrite is False
 
 
 def test_export_job_names_export_intent() -> None:
