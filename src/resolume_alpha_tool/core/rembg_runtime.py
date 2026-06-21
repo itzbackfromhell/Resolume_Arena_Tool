@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import sysconfig
 from importlib import metadata
+from pathlib import Path
 from typing import Any
 
 from PIL import Image
@@ -15,6 +17,9 @@ REMBG_INSTALL_HINT = (
     'Install/test with a standard CPython x64 interpreter: python -m pip install -e ".[rembg]". '
     "Do not use the free-threaded Windows build such as Python 3.14t for rembg/onnxruntime."
 )
+RESOLUME_MODEL_CACHE_ENV = "RESOLUME_ALPHA_MODEL_CACHE"
+REMBG_MODEL_CACHE_ENV = "U2NET_HOME"
+_PROJECT_ROOT = Path(__file__).resolve().parents[3]
 _FALSE_CONFIG_VALUES = {"", "0", "false", "no", "off", "none"}
 
 
@@ -42,13 +47,48 @@ def python_abi_note() -> str:
     return "standard CPython ABI"
 
 
+def _configured_env_path(name: str) -> Path | None:
+    value = os.environ.get(name)
+    if value is None or not value.strip():
+        return None
+    return Path(value).expanduser().resolve()
+
+
+def project_model_cache_dir() -> Path:
+    """Return the tool-controlled rembg model cache directory."""
+
+    configured = _configured_env_path(RESOLUME_MODEL_CACHE_ENV)
+    if configured is not None:
+        return configured
+    return (_PROJECT_ROOT / ".model_cache" / "u2net").resolve()
+
+
+def active_model_cache_dir() -> Path:
+    """Return the rembg model cache directory that will be used."""
+
+    configured = _configured_env_path(REMBG_MODEL_CACHE_ENV)
+    if configured is not None:
+        return configured
+    return project_model_cache_dir()
+
+
+def configure_rembg_model_cache() -> Path:
+    """Force rembg to use a predictable project-local model cache by default."""
+
+    cache_dir = active_model_cache_dir()
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    os.environ.setdefault(REMBG_MODEL_CACHE_ENV, str(cache_dir))
+    return cache_dir
+
+
 def runtime_summary() -> str:
     return (
         f"python={sys.version.split()[0]}, "
         f"abi={python_abi_note()}, "
         f"rembg={package_version('rembg')}, "
         f"onnxruntime={package_version('onnxruntime')}, "
-        f"pillow={package_version('Pillow')}"
+        f"pillow={package_version('Pillow')}, "
+        f"model_cache={active_model_cache_dir()}"
     )
 
 
@@ -58,6 +98,7 @@ def import_rembg_symbols() -> tuple[Any, Any]:
             "rembg/onnxruntime is not supported by this Windows free-threaded Python build. "
             f"{REMBG_INSTALL_HINT}. Runtime: {runtime_summary()}"
         )
+    configure_rembg_model_cache()
     try:
         from rembg import new_session, remove  # type: ignore
     except Exception as exc:  # pragma: no cover - optional dependency path
