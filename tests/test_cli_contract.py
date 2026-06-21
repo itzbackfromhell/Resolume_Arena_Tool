@@ -1,62 +1,48 @@
-from pathlib import Path
-
-from resolume_alpha_tool import cli
-from resolume_alpha_tool.cli import main
+from resolume_alpha_tool.cli import build_parser, main
 
 
-def test_profiles_command_prints_profiles(capsys) -> None:  # type: ignore[no-untyped-def]
-    assert main(["profiles"]) == 0
+def test_cli_exposes_only_focused_commands() -> None:
+    parser = build_parser()
+    subparsers = next(action for action in parser._actions if action.dest == "command")
+
+    assert set(subparsers.choices) == {"convert", "rembg-check"}
+
+
+def test_convert_command_uses_single_export_service(monkeypatch, tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
+    output_dir = tmp_path / "out"
+    calls = []
+
+    class Result:
+        output_path = output_dir / "asset_resolume.png"
+        width = 1920
+        height = 1080
+
+    def fake_export(input_path, target_dir, *, model, on_progress):  # type: ignore[no-untyped-def]
+        calls.append((input_path, target_dir, model, on_progress))
+        return Result()
+
+    monkeypatch.setattr("resolume_alpha_tool.cli.export_resolume_image", fake_export)
+
+    assert main(["convert", "input.png", str(output_dir), "--model", "isnet-general-use"]) == 0
+
+    assert len(calls) == 1
+    assert str(calls[0][0]) == "input.png"
+    assert calls[0][1] == output_dir
+    assert calls[0][2] == "isnet-general-use"
+    assert callable(calls[0][3])
+    assert "DONE" in capsys.readouterr().out
+
+
+def test_rembg_check_reports_failure_without_exiting(monkeypatch, capsys) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.setattr("resolume_alpha_tool.cli.runtime_summary", lambda: "runtime")
+
+    def broken_healthcheck(model: str) -> str:
+        raise RuntimeError(f"broken {model}")
+
+    monkeypatch.setattr("resolume_alpha_tool.cli.rembg_healthcheck", broken_healthcheck)
+
+    assert main(["rembg-check", "--model", "bad-model"]) == 1
 
     output = capsys.readouterr().out
-    assert "overlay_1080p" in output
-
-
-def test_diagnostics_command_writes_report(tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
-    report = tmp_path / "diagnostic.json"
-
-    assert main(["diagnostics", "--output", str(report)]) == 0
-
-    assert report.exists()
-    assert "Diagnostics written" in capsys.readouterr().out
-
-
-def test_preset_rembg_model_is_not_overwritten_by_cli_default(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
-    preset_path = tmp_path / "defaults.json"
-    preset_path.write_text(
-        '{"custom_rembg": {"remove_background": true, "rembg_model": "isnet-general-use"}}',
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(cli, "DEFAULT_PRESET_PATH", preset_path)
-
-    parser = cli.build_parser()
-    args = parser.parse_args(["remove", "input.png", "output", "--preset", "custom_rembg"])
-
-    options = cli._build_options(args)
-
-    assert options.remove_background is True
-    assert options.rembg_model == "isnet-general-use"
-
-
-def test_model_flag_overrides_preset_rembg_model(
-    tmp_path: Path,
-    monkeypatch,
-) -> None:  # type: ignore[no-untyped-def]
-    preset_path = tmp_path / "defaults.json"
-    preset_path.write_text(
-        '{"custom_rembg": {"remove_background": true, "rembg_model": "isnet-general-use"}}',
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(cli, "DEFAULT_PRESET_PATH", preset_path)
-
-    parser = cli.build_parser()
-    args = parser.parse_args(
-        ["remove", "input.png", "output", "--preset", "custom_rembg", "--model", "u2netp"]
-    )
-
-    options = cli._build_options(args)
-
-    assert options.remove_background is True
-    assert options.rembg_model == "u2netp"
+    assert "Runtime: runtime" in output
+    assert "rembg check failed: broken bad-model" in output

@@ -17,10 +17,10 @@ from .core.gui_settings import load_json_object, save_json_object, settings_path
 from .core.input_resolver import SUPPORTED_IMAGE_SUFFIXES, clean_path_text
 from .core.models import ProcessResult
 from .core.resolume_export import (
-    ExportJob,
     RESOLUME_CANVAS_SIZE,
     RESOLUME_OUTPUT_FORMAT,
     RESOLUME_OUTPUT_SUFFIX,
+    ExportJob,
     export_resolume_image,
     resolume_processing_options,
 )
