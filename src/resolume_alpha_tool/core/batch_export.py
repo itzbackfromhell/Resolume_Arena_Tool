@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .input_resolver import SUPPORTED_IMAGE_SUFFIXES
-from .models import ExportTarget, ProcessResult
+from .models import ExportTarget, ProcessingOptions, ProcessResult
 from .resolume_export import DEFAULT_REMBG_MODEL, export_alpha_image, normalize_export_target
 
 ProgressCallback = Callable[[str], None]
@@ -22,6 +22,7 @@ class BatchExportRequest:
     targets: tuple[ExportTarget, ...] = ("resolume",)
     model: str = DEFAULT_REMBG_MODEL
     recursive: bool = False
+    options_by_target: dict[ExportTarget, ProcessingOptions] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -116,6 +117,7 @@ def export_batch(
                     request.output_dir,
                     target=target,
                     model=request.model,
+                    options=request.options_by_target.get(target),
                     on_progress=on_progress,
                 )
                 items.append(BatchExportItem(input_path=source, target=target, result=result))
