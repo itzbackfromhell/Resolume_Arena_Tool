@@ -11,7 +11,11 @@ def test_package_version_reports_missing_package() -> None:
     assert rembg_runtime.package_version("definitely-not-installed-package") == "not installed"
 
 
-def test_runtime_summary_includes_versions(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_runtime_summary_includes_versions(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv(rembg_runtime.REMBG_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.delenv(rembg_runtime.RESOLUME_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.setattr(rembg_runtime, "_PROJECT_ROOT", tmp_path)
+
     def fake_version(name: str) -> str:
         if name == "rembg":
             return "2.test"
@@ -30,6 +34,56 @@ def test_runtime_summary_includes_versions(monkeypatch: pytest.MonkeyPatch) -> N
     assert "rembg=2.test" in summary
     assert "onnxruntime=1.test" in summary
     assert "pillow=10.test" in summary
+    assert f"model_cache={tmp_path / '.model_cache' / 'u2net'}" in summary
+
+
+def test_default_model_cache_uses_project_local_folder(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv(rembg_runtime.REMBG_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.delenv(rembg_runtime.RESOLUME_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.setattr(rembg_runtime, "_PROJECT_ROOT", tmp_path)
+
+    assert rembg_runtime.project_model_cache_dir() == tmp_path / ".model_cache" / "u2net"
+    assert rembg_runtime.active_model_cache_dir() == tmp_path / ".model_cache" / "u2net"
+
+
+def test_configure_rembg_model_cache_sets_u2net_home(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    monkeypatch.delenv(rembg_runtime.REMBG_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.delenv(rembg_runtime.RESOLUME_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.setattr(rembg_runtime, "_PROJECT_ROOT", tmp_path)
+
+    cache_dir = rembg_runtime.configure_rembg_model_cache()
+
+    assert cache_dir == tmp_path / ".model_cache" / "u2net"
+    assert cache_dir.exists()
+    assert rembg_runtime.REMBG_MODEL_CACHE_ENV in rembg_runtime.os.environ
+    assert rembg_runtime.os.environ[rembg_runtime.REMBG_MODEL_CACHE_ENV] == str(cache_dir)
+
+
+def test_configure_rembg_model_cache_respects_existing_u2net_home(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+) -> None:  # type: ignore[no-untyped-def]
+    custom = tmp_path / "custom-u2net"
+    monkeypatch.setenv(rembg_runtime.REMBG_MODEL_CACHE_ENV, str(custom))
+    monkeypatch.setenv(rembg_runtime.RESOLUME_MODEL_CACHE_ENV, str(tmp_path / "ignored"))
+
+    cache_dir = rembg_runtime.configure_rembg_model_cache()
+
+    assert cache_dir == custom
+    assert cache_dir.exists()
+    assert rembg_runtime.os.environ[rembg_runtime.REMBG_MODEL_CACHE_ENV] == str(custom)
+
+
+def test_custom_resolume_model_cache_feeds_u2net_home(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:  # type: ignore[no-untyped-def]
+    custom = tmp_path / "tool-cache"
+    monkeypatch.delenv(rembg_runtime.REMBG_MODEL_CACHE_ENV, raising=False)
+    monkeypatch.setenv(rembg_runtime.RESOLUME_MODEL_CACHE_ENV, str(custom))
+
+    cache_dir = rembg_runtime.configure_rembg_model_cache()
+
+    assert cache_dir == custom
+    assert cache_dir.exists()
+    assert rembg_runtime.os.environ[rembg_runtime.REMBG_MODEL_CACHE_ENV] == str(custom)
 
 
 def test_free_threaded_detection_uses_python_config(monkeypatch: pytest.MonkeyPatch) -> None:
