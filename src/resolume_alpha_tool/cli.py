@@ -30,7 +30,7 @@ def cmd_convert(args: argparse.Namespace) -> int:
 
 
 def cmd_batch(args: argparse.Namespace) -> int:
-    targets = normalize_batch_targets(args.target)
+    targets = normalize_batch_targets(args.target or ["resolume"])
     summary = export_batch(
         BatchExportRequest(
             input_dir=Path(args.input_dir),
@@ -76,8 +76,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--target",
         choices=CLI_TARGET_CHOICES,
         action="append",
-        default=["resolume"],
-        help="Export target. Pass twice to export both modes.",
+        default=None,
+        help="Export target. Pass twice to export both modes. Default: resolume.",
     )
     batch.add_argument("--recursive", action="store_true")
     batch.add_argument("--model", default=DEFAULT_REMBG_MODEL)
