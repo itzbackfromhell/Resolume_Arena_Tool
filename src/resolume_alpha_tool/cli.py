@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
+from .core.exceptions import AlphaDropperError
 from .core.rembg_runtime import rembg_healthcheck, runtime_summary
 from .core.resolume_export import (
     CLI_TARGET_CHOICES,
@@ -57,7 +59,11 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except AlphaDropperError as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":  # pragma: no cover
