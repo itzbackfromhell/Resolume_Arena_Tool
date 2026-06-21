@@ -23,7 +23,10 @@ def test_process_image_thresholds_alpha() -> None:
 
 
 def test_process_image_erodes_alpha_edge() -> None:
-    img = Image.new("RGBA", (5, 5), (255, 255, 255, 255))
+    img = Image.new("RGBA", (5, 5), (255, 255, 255, 0))
+    for y in range(1, 4):
+        for x in range(1, 4):
+            img.putpixel((x, y), (255, 255, 255, 255))
 
     out = process_image_object(
         img,
@@ -36,7 +39,7 @@ def test_process_image_erodes_alpha_edge() -> None:
         ),
     )
 
-    assert out.getpixel((0, 0))[3] == 0
+    assert out.getpixel((1, 1))[3] == 0
     assert out.getpixel((2, 2))[3] == 255
 
 
