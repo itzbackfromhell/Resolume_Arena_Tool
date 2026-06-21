@@ -30,6 +30,11 @@ if (-not (Test-Path ".venv")) {
 }
 
 . .\.venv\Scripts\Activate.ps1
+
+Invoke-Checked "Check Python ABI" {
+    python -c "import sys, sysconfig; value=sysconfig.get_config_var('Py_GIL_DISABLED'); print(sys.executable); print(sys.version); print('Py_GIL_DISABLED=', value); raise SystemExit(1 if str(value).strip().lower() not in ('none', '0', 'false', '') else 0)"
+}
+
 Invoke-Checked "Upgrade pip" { python -m pip install --upgrade pip }
 Invoke-Checked "Install project extras" { pip install -e ".[dev,rembg]" }
 
