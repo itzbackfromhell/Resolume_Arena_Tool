@@ -48,21 +48,22 @@ TARGET_LABELS: dict[ExportTarget, str] = {
     "shirt_print": "Shirt/Print transparent PNG",
 }
 DARK_THEME = {
-    "background": "#111318",
-    "panel": "#181b22",
-    "panel_alt": "#20242d",
-    "field": "#0f1117",
-    "text": "#f2f5f8",
-    "muted": "#aab2bf",
-    "disabled": "#69707d",
-    "accent": "#7aa2ff",
-    "accent_hover": "#8fb1ff",
-    "accent_pressed": "#5d84db",
-    "border": "#343a46",
-    "error": "#ff6b6b",
+    "background": "#000000",
+    "panel": "#000000",
+    "panel_alt": "#000000",
+    "field": "#000000",
+    "text": "#f4fff4",
+    "muted": "#b7c7b7",
+    "disabled": "#536153",
+    "heading": "#39ff14",
+    "accent": "#39ff14",
+    "accent_hover": "#6dff4f",
+    "accent_pressed": "#25b80f",
+    "border": "#164d12",
+    "error": "#ff4d4d",
 }
-DARK_CHECKER_BASE = (32, 36, 45, 255)
-DARK_CHECKER_ALT = (49, 55, 68, 255)
+DARK_CHECKER_BASE = (0, 0, 0, 255)
+DARK_CHECKER_ALT = (5, 18, 5, 255)
 
 
 class AlphaDropperApp(tk.Tk):
@@ -107,14 +108,14 @@ class AlphaDropperApp(tk.Tk):
         self.after(100, self._drain_messages)
 
     def _apply_dark_theme(self) -> None:
-        """Apply a dark ttk theme across the focused desktop UI."""
+        """Apply a black/neon ttk theme across the focused desktop UI."""
 
         self.configure(bg=DARK_THEME["background"])
         self.option_add("*Background", DARK_THEME["background"])
         self.option_add("*Foreground", DARK_THEME["text"])
         self.option_add("*selectBackground", DARK_THEME["accent"])
-        self.option_add("*selectForeground", DARK_THEME["field"])
-        self.option_add("*insertBackground", DARK_THEME["text"])
+        self.option_add("*selectForeground", DARK_THEME["background"])
+        self.option_add("*insertBackground", DARK_THEME["heading"])
 
         style = ttk.Style(self)
         with contextlib.suppress(tk.TclError):
@@ -129,7 +130,7 @@ class AlphaDropperApp(tk.Tk):
             lightcolor=DARK_THEME["border"],
             darkcolor=DARK_THEME["border"],
             troughcolor=DARK_THEME["field"],
-            focuscolor=DARK_THEME["accent"],
+            focuscolor=DARK_THEME["heading"],
             font=("Segoe UI", 10),
         )
         style.configure("TFrame", background=DARK_THEME["background"])
@@ -142,14 +143,14 @@ class AlphaDropperApp(tk.Tk):
         style.configure(
             "TLabelframe.Label",
             background=DARK_THEME["background"],
-            foreground=DARK_THEME["muted"],
+            foreground=DARK_THEME["heading"],
             font=("Segoe UI", 10, "bold"),
         )
         style.configure("TLabel", background=DARK_THEME["background"], foreground=DARK_THEME["text"])
         style.configure(
             "Title.TLabel",
             background=DARK_THEME["background"],
-            foreground=DARK_THEME["text"],
+            foreground=DARK_THEME["heading"],
             font=("Segoe UI", 18, "bold"),
         )
         style.configure(
@@ -168,7 +169,7 @@ class AlphaDropperApp(tk.Tk):
         style.configure(
             "TButton",
             background=DARK_THEME["accent"],
-            foreground=DARK_THEME["field"],
+            foreground=DARK_THEME["background"],
             bordercolor=DARK_THEME["accent"],
             focusthickness=1,
             focuscolor=DARK_THEME["accent_hover"],
@@ -184,8 +185,8 @@ class AlphaDropperApp(tk.Tk):
             ],
             foreground=[
                 ("disabled", DARK_THEME["disabled"]),
-                ("pressed", DARK_THEME["field"]),
-                ("active", DARK_THEME["field"]),
+                ("pressed", DARK_THEME["background"]),
+                ("active", DARK_THEME["background"]),
             ],
             bordercolor=[
                 ("disabled", DARK_THEME["border"]),
@@ -197,7 +198,7 @@ class AlphaDropperApp(tk.Tk):
             "TEntry",
             fieldbackground=DARK_THEME["field"],
             foreground=DARK_THEME["text"],
-            insertcolor=DARK_THEME["text"],
+            insertcolor=DARK_THEME["heading"],
             bordercolor=DARK_THEME["border"],
             lightcolor=DARK_THEME["border"],
             darkcolor=DARK_THEME["border"],
@@ -207,27 +208,28 @@ class AlphaDropperApp(tk.Tk):
             "TEntry",
             fieldbackground=[("disabled", DARK_THEME["panel_alt"])],
             foreground=[("disabled", DARK_THEME["disabled"])],
+            bordercolor=[("focus", DARK_THEME["heading"])],
         )
         style.configure(
             "TRadiobutton",
             background=DARK_THEME["panel"],
             foreground=DARK_THEME["text"],
             indicatorcolor=DARK_THEME["field"],
-            focuscolor=DARK_THEME["accent"],
+            focuscolor=DARK_THEME["heading"],
             padding=4,
         )
         style.map(
             "TRadiobutton",
             background=[
-                ("active", DARK_THEME["panel_alt"]),
+                ("active", DARK_THEME["background"]),
                 ("selected", DARK_THEME["panel"]),
             ],
             foreground=[
                 ("disabled", DARK_THEME["disabled"]),
-                ("active", DARK_THEME["text"]),
+                ("active", DARK_THEME["heading"]),
             ],
             indicatorcolor=[
-                ("selected", DARK_THEME["accent"]),
+                ("selected", DARK_THEME["heading"]),
                 ("pressed", DARK_THEME["accent_pressed"]),
                 ("active", DARK_THEME["accent_hover"]),
             ],
