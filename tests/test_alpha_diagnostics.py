@@ -2,7 +2,10 @@ from pathlib import Path
 
 from PIL import Image
 
-from resolume_alpha_tool.core.alpha_diagnostics import analyze_alpha_file, analyze_alpha_image_object
+from resolume_alpha_tool.core.alpha_diagnostics import (
+    analyze_alpha_file,
+    analyze_alpha_image_object,
+)
 
 
 def test_alpha_diagnostics_detects_fully_opaque_input() -> None:
