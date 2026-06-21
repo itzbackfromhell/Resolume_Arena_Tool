@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "resolume-alpha-dropper"
 version = "0.1.1"
-description = "Local-first single-image transparent PNG exporter for Resolume and shirt/print workflows."
+description = "Local-first transparent PNG exporter for Resolume, VJ, batch, and shirt/print workflows."
 readme = "README.md"
 requires-python = ">=3.11,<3.15"
 license = {text = "MIT"}
@@ -58,7 +58,7 @@ testpaths = ["tests"]
 addopts = "-q"
 
 [tool.ruff]
-line-length = 100
+line-length = 120
 target-version = "py311"
 
 [tool.ruff.lint]

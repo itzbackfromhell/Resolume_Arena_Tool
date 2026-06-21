@@ -6,6 +6,7 @@ import argparse
 import sys
 from pathlib import Path
 
+from .core.batch_export import BatchExportRequest, export_batch, normalize_batch_targets
 from .core.exceptions import AlphaDropperError
 from .core.rembg_runtime import rembg_healthcheck, runtime_summary
 from .core.resolume_export import (
@@ -26,6 +27,25 @@ def cmd_convert(args: argparse.Namespace) -> int:
     )
     print(f"DONE {result.output_path} ({result.width}x{result.height})")
     return 0
+
+
+def cmd_batch(args: argparse.Namespace) -> int:
+    targets = normalize_batch_targets(args.target or ["resolume"])
+    summary = export_batch(
+        BatchExportRequest(
+            input_dir=Path(args.input_dir),
+            output_dir=Path(args.output_dir),
+            targets=targets,
+            model=args.model,
+            recursive=args.recursive,
+        ),
+        on_progress=print,
+    )
+    print(
+        f"DONE batch: {summary.exported_count} exported, "
+        f"{summary.failed_count} failed, {summary.total_count} total"
+    )
+    return 0 if summary.failed_count == 0 else 2
 
 
 def cmd_rembg_check(args: argparse.Namespace) -> int:
@@ -49,6 +69,20 @@ def build_parser() -> argparse.ArgumentParser:
     convert.add_argument("--model", default=DEFAULT_REMBG_MODEL)
     convert.set_defaults(func=cmd_convert)
 
+    batch = sub.add_parser("batch", help="Convert every supported image in a folder.")
+    batch.add_argument("input_dir")
+    batch.add_argument("output_dir")
+    batch.add_argument(
+        "--target",
+        choices=CLI_TARGET_CHOICES,
+        action="append",
+        default=None,
+        help="Export target. Pass twice to export both modes. Default: resolume.",
+    )
+    batch.add_argument("--recursive", action="store_true")
+    batch.add_argument("--model", default=DEFAULT_REMBG_MODEL)
+    batch.set_defaults(func=cmd_batch)
+
     rembg = sub.add_parser("rembg-check", help="Test required rembg backend and model session.")
     rembg.add_argument("--model", default=DEFAULT_REMBG_MODEL)
     rembg.set_defaults(func=cmd_rembg_check)
@@ -61,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     try:
         return args.func(args)
-    except AlphaDropperError as exc:
+    except (AlphaDropperError, OSError, ValueError) as exc:
         print(f"ERROR: {exc}", file=sys.stderr)
         return 1
 

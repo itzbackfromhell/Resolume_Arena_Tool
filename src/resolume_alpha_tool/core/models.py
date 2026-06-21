@@ -21,6 +21,8 @@ class ProcessingOptions:
     feather_radius: float = 0.8
     alpha_gamma: float = 1.0
     despill_strength: float = 0.35
+    alpha_erode: int = 0
+    alpha_dilate: int = 0
     transparent_rgb_cleanup: bool = True
     trim_to_alpha: bool = False
     padding: int = 0
