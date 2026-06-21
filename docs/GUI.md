@@ -17,13 +17,14 @@ The GUI does not modify Resolume, inject into Resolume, or require Resolume to b
 
 ## Dark interface
 
-The desktop UI uses a built-in dark theme by default:
+The desktop UI uses a built-in black/neon theme by default:
 
-- dark root window and panels
-- dark text fields
-- dark preview placeholders
-- dark alpha checkerboard preview
-- blue accent buttons and selected controls
+- pure black root window and panels
+- pure black text fields
+- pure black preview placeholders
+- dark black/green alpha checkerboard preview
+- poison-green title and section headings
+- poison-green accent buttons and selected controls
 
 This is a fixed app theme, not an operating-system setting.
 
