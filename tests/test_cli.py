@@ -72,6 +72,7 @@ def test_cli_batch_builds_options_for_requested_targets(monkeypatch) -> None:  #
         assert request.options_by_target["resolume"].canvas_width == 3840
         assert request.options_by_target["resolume"].fit_mode == "cover"
         assert request.options_by_target["shirt_print"].padding == 24
+        assert request.report_path == Path("batch-report.json")
         return BatchExportSummary(input_dir=request.input_dir, output_dir=request.output_dir)
 
     monkeypatch.setattr(cli, "export_batch", fake_batch)
@@ -91,6 +92,8 @@ def test_cli_batch_builds_options_for_requested_targets(monkeypatch) -> None:  #
             "cover",
             "--shirt-padding",
             "24",
+            "--report",
+            "batch-report.json",
         ]
     )
 
