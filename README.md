@@ -1,11 +1,12 @@
 # Alpha PNG Exporter
 
-**Alpha PNG Exporter** is a local-first Windows desktop tool for creating transparent PNG assets from normal images.
+**Alpha PNG Exporter** is a local-first Windows desktop and CLI tool for creating transparent PNG assets from normal images.
 
 ```text
 image or folder in
   -> required local background removal with rembg
   -> transparent PNG export for Resolume or shirt/print upload
+  -> optional validation report for QA / handoff
 ```
 
 The app does not patch, inject into, or modify Resolume. It only writes image files into a normal output folder.
@@ -47,6 +48,18 @@ The desktop app supports:
 - checkerboard, black, white, and alpha-matte preview modes
 - input/output alpha diagnostics with visible-content warnings
 - small safe edge cleanup profiles: `normal`, `soft`, `tight`, `grow`
+
+## CLI workflow features
+
+The CLI supports the same production-oriented export contracts as the GUI:
+
+- single export via `convert`
+- compatibility alias via `remove`
+- batch professional mode with recursive scanning and multi-target exports
+- optional JSON batch report via `--report`
+- Output Validation 2.0 via `validate`
+- rembg runtime probe via `rembg-check`
+- version output via `version`
 
 ## Important Python version note
 
@@ -123,25 +136,25 @@ The first run can take longer because the local model may need to load or downlo
 Resolume export:
 
 ```powershell
-alpha-png convert input.jpg output --target resolume
+alpha-png convert .\input\photo.jpg .\output --target resolume --preset 1080p --fit contain
 ```
 
 Shirt/print export:
 
 ```powershell
-alpha-png convert input.jpg output --target shirt-print
+alpha-png remove .\input\photo.jpg .\output --target shirt-print --shirt-padding 96 --edge-profile tight
 ```
 
-Batch Resolume export:
+Batch both modes with JSON report:
 
 ```powershell
-alpha-png batch input-folder output --target resolume
+alpha-png batch .\input .\output --recursive --target resolume --target shirt-print --report .\output\batch-report.json
 ```
 
-Batch both modes:
+Validate an exported PNG:
 
 ```powershell
-alpha-png batch input-folder output --target resolume --target shirt-print
+alpha-png validate .\output\asset_resolume.png --target resolume --preset 1080p
 ```
 
 The module entrypoint also works:
@@ -175,3 +188,7 @@ python -m resolume_alpha_tool.cli rembg-check
 ## GUI docs
 
 See [docs/GUI.md](docs/GUI.md).
+
+## CLI docs
+
+See [docs/USAGE.md](docs/USAGE.md).
