@@ -2,7 +2,7 @@
 
 ## Project mission
 
-Build a professional local-first asset-preparation tool for Resolume Arena/Avenue users. The tool creates clean transparent PNG/WebP visual assets from normal images without paid cloud APIs.
+Build a professional local-first asset-preparation tool for Resolume Arena/Avenue users. The current app creates one clean transparent 1920x1080 PNG from one normal image without paid cloud APIs.
 
 ## Non-negotiables
 
@@ -36,15 +36,13 @@ Build a professional local-first asset-preparation tool for Resolume Arena/Avenu
 ## UX principles
 
 - Make the default path stupidly simple: image in -> alpha PNG out.
-- Show clear logs and actionable errors.
-- Use sane Resolume-oriented presets: transparent PNG, 1920x1080 canvas, clean edges.
+- Show clear actionable errors.
+- Use safe Resolume-oriented defaults: transparent PNG, 1920x1080 canvas, clean edges.
 - Prefer safe defaults over maximum knobs.
 
 ## Future improvements
 
 - Drag/drop support using an optional dependency.
-- OSC triggering.
-- Resolume local REST/WebSocket sync.
-- Project/session files.
-- GPU-specific rembg profiles.
+- Better preview/compare UX.
 - Installer packaging.
+- Optional advanced controls only after the single-image path is stable.

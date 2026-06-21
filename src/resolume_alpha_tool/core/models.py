@@ -1,4 +1,4 @@
-"""Dataclasses shared across CLI, GUI, and core services."""
+"""Dataclasses shared by the focused export pipeline."""
 
 from __future__ import annotations
 
@@ -6,13 +6,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal
 
-ImageFormat = Literal["png", "webp"]
+ImageFormat = Literal["png"]
 FitMode = Literal["none", "contain", "cover", "stretch"]
 
 
 @dataclass(frozen=True)
 class ProcessingOptions:
-    """Options controlling a single image-processing operation."""
+    """Options controlling one deterministic image-processing operation."""
 
     remove_background: bool = False
     rembg_model: str = "u2net"
@@ -21,19 +21,10 @@ class ProcessingOptions:
     alpha_gamma: float = 1.0
     despill_strength: float = 0.35
     transparent_rgb_cleanup: bool = True
-    invert_alpha: bool = False
-    auto_crop: bool = False
-    padding: int = 0
-    outline_width: int = 0
-    glow_radius: float = 0.0
-    shadow_radius: float = 0.0
-    shadow_offset_x: int = 8
-    shadow_offset_y: int = 8
     fit_mode: FitMode = "none"
     canvas_width: int | None = None
     canvas_height: int | None = None
     output_format: ImageFormat = "png"
-    webp_quality: int = 95
     overwrite: bool = False
     suffix: str = "_alpha"
 
@@ -53,27 +44,3 @@ class ProcessResult:
     had_alpha: bool
     background_removed: bool
     warnings: tuple[str, ...] = field(default_factory=tuple)
-
-
-@dataclass(frozen=True)
-class BatchSummary:
-    """Summary for a batch run."""
-
-    processed: int
-    failed: int
-    skipped: int
-    results: tuple[ProcessResult, ...]
-    errors: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class ResolumeConfig:
-    """Local Resolume webserver configuration."""
-
-    host: str = "127.0.0.1"
-    port: int = 8080
-    timeout_seconds: float = 2.0
-
-    @property
-    def base_url(self) -> str:
-        return f"http://{self.host}:{self.port}"

@@ -1,8 +1,6 @@
 # Resolume Alpha Dropper
 
-**Resolume Alpha Dropper** is a local-first Windows-friendly tool for creating transparent image assets for Resolume Arena/Avenue workflows.
-
-The current desktop GUI is intentionally simple:
+**Resolume Alpha Dropper** is a local-first Windows desktop tool for creating one transparent PNG asset for Resolume Arena/Avenue from one normal image.
 
 ```text
 one image in
@@ -15,9 +13,7 @@ The app does not patch, inject into, or modify Resolume. It only writes image fi
 
 ## Important Python version note
 
-For background removal on Windows, use a **standard CPython x64** install, preferably Python **3.13** or **3.12**.
-
-Do **not** use the free-threaded Windows build such as `Python314t` / `cp314t` for the rembg workflow. The local background-removal stack depends on `onnxruntime`, and the free-threaded Windows ABI can fail dependency resolution even when the normal CPython Windows wheel exists.
+For background removal on Windows, use a **standard CPython x64** install. Do **not** use the free-threaded Windows build such as `Python314t` / `cp314t` for the rembg workflow.
 
 Check what interpreter PowerShell is using:
 
@@ -28,9 +24,9 @@ python -c "import sys, sysconfig; print(sys.executable); print(sys.version); pri
 
 If `Py_GIL_DISABLED` prints `1`, use another standard Python interpreter for this project.
 
-## Current GUI scope
+## Current scope
 
-The GUI is the first clean user path and does exactly one job:
+The app does exactly one job:
 
 - select one image
 - remove the background with the local `rembg` backend
@@ -38,37 +34,17 @@ The GUI is the first clean user path and does exactly one job:
 - save a PNG with the `_resolume` suffix
 - avoid overwriting existing files by using numbered collision-safe names
 
-Advanced knobs, presets, batch queue, retry-failed, reports, and watch-folder controls are intentionally not exposed in the simplified GUI.
-
-## Core and CLI scope
-
-The repository still contains reusable core services and CLI commands for automation/power-user workflows:
-
-- single-image processing
-- batch folder processing
-- watch-folder processing
-- diagnostics
-- rembg runtime check
-- Resolume webserver healthcheck
-- workflow profiles
+Batch export, queue preview, retry-failed, presets, reports, watch-folder mode, Resolume REST checks, and power-user export controls have been removed from the focused app path.
 
 ## Install
 
 ```powershell
 git clone https://github.com/itzbackfromhell/Resolume_Arena_Tool.git
 cd Resolume_Arena_Tool
-py -3.13 -m venv .venv
+py -3.14 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev,rembg]"
-```
-
-If you only have Python 3.12 installed, use `py -3.12 -m venv .venv` instead.
-
-Minimal install without background removal support:
-
-```powershell
-python -m pip install -e .
 ```
 
 ## Launch GUI
@@ -85,38 +61,18 @@ resolume-alpha-gui
 
 ## Verify background removal
 
-The GUI depends on the optional local `rembg` backend for background removal. Check it with:
-
 ```powershell
 python -m resolume_alpha_tool.cli rembg-check
 ```
 
 The first run can take longer because the local model may need to load or download into the model cache.
 
-## Useful CLI commands
+## CLI
 
-Single image:
-
-```powershell
-python -m resolume_alpha_tool.cli remove input.jpg output --remove-bg --preset resolume_1080p
-```
-
-Batch folder:
+Convert one image from PowerShell:
 
 ```powershell
-python -m resolume_alpha_tool.cli batch input output --remove-bg --preset resolume_1080p
-```
-
-Watch folder:
-
-```powershell
-python -m resolume_alpha_tool.cli watch input output --remove-bg --preset resolume_1080p
-```
-
-Diagnostics:
-
-```powershell
-python -m resolume_alpha_tool.cli diagnostics
+python -m resolume_alpha_tool.cli convert input.jpg output
 ```
 
 ## Tests and quality gates

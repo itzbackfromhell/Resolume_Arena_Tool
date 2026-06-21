@@ -1,8 +1,7 @@
-"""Image-processing pipeline for alpha assets."""
+"""Image-processing pipeline for one Resolume alpha asset."""
 
 from __future__ import annotations
 
-import math
 from functools import lru_cache
 from pathlib import Path
 
@@ -13,9 +12,9 @@ from .models import ProcessingOptions, ProcessResult
 from .rembg_runtime import create_rembg_session, import_rembg_symbols
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=4)
 def _get_rembg_session(model_name: str):  # type: ignore[no-untyped-def]
-    """Create and cache a rembg session for batch performance."""
+    """Create and cache a rembg session for repeated exports."""
 
     return create_rembg_session(model_name)
 
@@ -51,15 +50,11 @@ def _apply_alpha_gamma(alpha: Image.Image, gamma: float) -> Image.Image:
 
 
 def _despill_rgb(image: Image.Image, alpha: Image.Image, strength: float) -> Image.Image:
-    """Reduce visible matte color in semi-transparent pixels.
-
-    This is intentionally conservative: it darkens RGB values near low-alpha edges,
-    which prevents light halos when Resolume composites the asset over dark visuals.
-    """
+    """Reduce visible matte color in semi-transparent pixels."""
 
     strength = max(0.0, min(1.0, strength))
     if strength <= 0:
-        return image
+        return image.convert("RGBA")
 
     rgb = image.convert("RGB")
     darkened = ImageEnhance.Brightness(rgb).enhance(1.0 - (0.45 * strength))
@@ -73,104 +68,17 @@ def _cleanup_transparent_rgb(image: Image.Image) -> Image.Image:
     """Set fully transparent pixels to black to avoid fringe garbage."""
 
     rgba = image.convert("RGBA")
-    _r, _g, _b, a = rgba.split()
-    zero_mask = a.point(lambda value: 255 if value == 0 else 0)
+    _r, _g, _b, alpha = rgba.split()
+    zero_mask = alpha.point(lambda value: 255 if value == 0 else 0)
     black = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
     return Image.composite(black, rgba, zero_mask).convert("RGBA")
 
 
-def _pad_transparent(image: Image.Image, padding: int) -> Image.Image:
-    padding = max(0, int(padding))
-    if padding <= 0:
-        return image.convert("RGBA")
-    rgba = image.convert("RGBA")
-    canvas = Image.new("RGBA", (rgba.width + padding * 2, rgba.height + padding * 2), (0, 0, 0, 0))
-    canvas.alpha_composite(rgba, (padding, padding))
-    return canvas
-
-
-def _crop_to_alpha(image: Image.Image, padding: int = 0) -> Image.Image:
-    rgba = image.convert("RGBA")
-    bbox = rgba.getchannel("A").getbbox()
-    if bbox is None:
-        return _pad_transparent(rgba, padding)
-    return _pad_transparent(rgba.crop(bbox), padding)
-
-
-def _effect_margin(options: ProcessingOptions) -> int:
-    outline = max(0, int(options.outline_width))
-    glow = max(0, math.ceil(options.glow_radius * 2.0))
-    shadow = 0
-    if options.shadow_radius > 0:
-        shadow = max(abs(int(options.shadow_offset_x)), abs(int(options.shadow_offset_y))) + math.ceil(
-            options.shadow_radius * 2.0
-        )
-    return max(outline, glow, shadow)
-
-
-def _prepare_effect_canvas(image: Image.Image, options: ProcessingOptions) -> Image.Image:
-    padding = max(0, int(options.padding)) + _effect_margin(options)
-    if options.auto_crop:
-        return _crop_to_alpha(image, padding)
-    return _pad_transparent(image, padding)
-
-
-def _apply_outline(image: Image.Image, width: int) -> Image.Image:
-    width = max(0, int(width))
-    if width <= 0:
-        return image.convert("RGBA")
-    rgba = image.convert("RGBA")
-    alpha = rgba.getchannel("A")
-    size = (width * 2) + 1
-    expanded = alpha.filter(ImageFilter.MaxFilter(size=size))
-    outline_alpha = ImageChops.subtract(expanded, alpha)
-    outline = Image.new("RGBA", rgba.size, (0, 0, 0, 255))
-    outline.putalpha(outline_alpha)
-    outline.alpha_composite(rgba)
-    return outline
-
-
-def _apply_glow(image: Image.Image, radius: float) -> Image.Image:
-    radius = max(0.0, float(radius))
-    if radius <= 0:
-        return image.convert("RGBA")
-    rgba = image.convert("RGBA")
-    glow_alpha = rgba.getchannel("A").filter(ImageFilter.GaussianBlur(radius=radius))
-    glow_alpha = glow_alpha.point(lambda value: min(255, int(value * 0.65)))
-    glow = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
-    glow.putalpha(glow_alpha)
-    glow.alpha_composite(rgba)
-    return glow
-
-
-def _apply_shadow(image: Image.Image, radius: float, offset_x: int, offset_y: int) -> Image.Image:
-    radius = max(0.0, float(radius))
-    if radius <= 0:
-        return image.convert("RGBA")
-    rgba = image.convert("RGBA")
-    alpha = rgba.getchannel("A").filter(ImageFilter.GaussianBlur(radius=radius))
-    alpha = alpha.point(lambda value: min(255, int(value * 0.55)))
-    shadow_alpha = Image.new("L", rgba.size, 0)
-    shadow_alpha.paste(alpha, (int(offset_x), int(offset_y)))
-    shadow = Image.new("RGBA", rgba.size, (0, 0, 0, 255))
-    shadow.putalpha(shadow_alpha)
-    shadow.alpha_composite(rgba)
-    return shadow
-
-
-def _apply_alpha_effects(image: Image.Image, options: ProcessingOptions) -> Image.Image:
-    rgba = _prepare_effect_canvas(image, options)
-    rgba = _apply_shadow(rgba, options.shadow_radius, options.shadow_offset_x, options.shadow_offset_y)
-    rgba = _apply_glow(rgba, options.glow_radius)
-    rgba = _apply_outline(rgba, options.outline_width)
-    return rgba
-
-
 def _fit_to_canvas(image: Image.Image, options: ProcessingOptions) -> Image.Image:
     if options.fit_mode == "none":
-        return image
+        return image.convert("RGBA")
     if not options.canvas_width or not options.canvas_height:
-        return image
+        return image.convert("RGBA")
 
     target_w = max(1, int(options.canvas_width))
     target_h = max(1, int(options.canvas_height))
@@ -215,13 +123,9 @@ def process_image_object(image: Image.Image, options: ProcessingOptions) -> Imag
 
     alpha = _apply_alpha_gamma(alpha, options.alpha_gamma)
 
-    # Prevent blur from expanding alpha outside the original silhouette too much.
-    if had_alpha and not options.remove_background and not options.invert_alpha:
+    if had_alpha and not options.remove_background:
         original_alpha = image.convert("RGBA").getchannel("A")
         alpha = ImageChops.darker(alpha, original_alpha)
-
-    if options.invert_alpha:
-        alpha = ImageChops.invert(alpha)
 
     rgba.putalpha(alpha)
     rgba = _despill_rgb(rgba, alpha, options.despill_strength)
@@ -229,7 +133,6 @@ def process_image_object(image: Image.Image, options: ProcessingOptions) -> Imag
     if options.transparent_rgb_cleanup:
         rgba = _cleanup_transparent_rgb(rgba)
 
-    rgba = _apply_alpha_effects(rgba, options)
     return _fit_to_canvas(rgba, options)
 
 
@@ -238,13 +141,10 @@ def save_image(image: Image.Image, output_path: Path, options: ProcessingOptions
     if output_path.exists() and not options.overwrite:
         raise ProcessingError(f"Output already exists: {output_path}")
 
-    fmt = options.output_format.lower()
-    if fmt == "png":
-        image.save(output_path, format="PNG", optimize=True)
-    elif fmt == "webp":
-        image.save(output_path, format="WEBP", quality=options.webp_quality, lossless=False)
-    else:
+    if options.output_format != "png":
         raise ProcessingError(f"Unsupported output format: {options.output_format}")
+
+    image.save(output_path, format="PNG", optimize=True)
 
     if not output_path.exists():
         raise ProcessingError(f"Image save reported success, but output was not created: {output_path}")
@@ -258,9 +158,9 @@ def process_file(input_path: Path, output_path: Path, options: ProcessingOptions
     input_path = input_path.expanduser().resolve()
     output_path = output_path.expanduser().resolve()
     try:
-        with Image.open(input_path) as img:
-            had_alpha = "A" in img.getbands()
-            processed = process_image_object(img, options)
+        with Image.open(input_path) as image:
+            had_alpha = "A" in image.getbands()
+            processed = process_image_object(image, options)
         save_image(processed, output_path, options)
         width, height = processed.size
         return ProcessResult(

@@ -1,12 +1,12 @@
 # GUI Workflow
 
-Resolume Alpha Dropper's desktop GUI is intentionally focused for the first usable app version:
+Resolume Alpha Dropper's desktop GUI is intentionally focused:
 
 ```text
 one image in -> local background removal -> transparent 1920x1080 PNG out
 ```
 
-The GUI does not modify Resolume, inject into Resolume, or require Resolume to be installed. It only creates a transparent asset file that can be dragged/imported into Resolume Arena/Avenue.
+The GUI does not modify Resolume, inject into Resolume, or require Resolume to be installed. It only creates a transparent PNG file that can be dragged/imported into Resolume Arena/Avenue.
 
 ## Main flow
 
@@ -17,7 +17,7 @@ The GUI does not modify Resolume, inject into Resolume, or require Resolume to b
 
 ## Fixed GUI export settings
 
-The GUI deliberately exposes no advanced knobs yet. Every GUI export uses the same deterministic Resolume-oriented settings:
+Every GUI export uses the same Resolume-oriented settings:
 
 - remove background: enabled
 - output format: PNG
@@ -30,7 +30,7 @@ If the target filename already exists, the app uses the collision-safe naming he
 
 ## Background removal dependency
 
-Background removal uses the optional local `rembg` backend. Use a standard CPython x64 interpreter, preferably Python 3.13 or 3.12 on Windows.
+Background removal uses the optional local `rembg` backend. Use a standard CPython x64 interpreter on Windows.
 
 Do not use a free-threaded Windows build such as `Python314t` / `cp314t` for the rembg workflow. That ABI can fail dependency resolution for the onnxruntime stack.
 
@@ -55,7 +55,3 @@ The first export can take longer because the local AI model may need to load or 
 - WebP
 - BMP
 - TIFF
-
-## What moved out of the GUI
-
-Batch export, queue preview, retry-failed, presets, reports, watch-folder mode, and power-user export controls are not part of the simplified GUI anymore. The core services and CLI can still keep automation features while the desktop app stays focused on the first clean user path.

@@ -1,19 +1,16 @@
 # Architecture
 
-## Layers
+## Current layers
 
 ```text
-GUI / CLI
-  -> resource resolver / diagnostics
-  -> queue scanner / report writer
-  -> batch service / watch-folder service
-    -> alpha processor
+GUI / tiny CLI
+  -> core/resolume_export.py
+    -> alpha_processor.py
       -> Pillow operations
-      -> optional rembg background removal
-      -> alpha cleanup and visual effects
-  -> output naming / validation
-  -> safe Resolume workflow profiles
-  -> optional Resolume API client
+      -> optional local rembg background removal
+      -> alpha cleanup
+      -> transparent 1920x1080 PNG canvas fitting
+    -> output naming / input validation
 ```
 
 ## Design rules
@@ -21,13 +18,21 @@ GUI / CLI
 - Core services must not import Tkinter.
 - GUI must not implement image algorithms.
 - Optional dependencies must fail with actionable messages.
-- Background-removal sessions are cached to keep batch processing fast.
-- Batch runs collect errors and continue.
-- Queue preview and report writing stay in core helpers so GUI behavior is testable.
-- Portable builds must resolve resources in both source checkouts and PyInstaller executables.
-- Resolume integration remains conservative: export assets safely, do not mutate Resolume projects blindly.
+- Background-removal sessions are cached for repeated exports.
+- The default path is intentionally narrow: one image in, one Resolume-ready PNG out.
+- Resolume integration remains file-based and conservative: export assets safely, do not mutate Resolume projects.
 
 ## Main components
+
+### `resolume_export.py`
+
+Single service used by GUI and CLI. It owns the fixed export contract:
+
+- local background removal enabled
+- transparent PNG output
+- 1920x1080 canvas
+- `_resolume` suffix
+- collision-safe output naming
 
 ### `alpha_processor.py`
 
@@ -38,88 +43,27 @@ Responsible for:
 - alpha thresholding
 - edge feathering
 - alpha gamma
-- despill
-- invert alpha
-- auto-crop and transparent padding
-- outline / glow / shadow effects
-- canvas fitting
-- export
-
-### `batch.py`
-
-Responsible for:
-
-- validating folders
-- scanning images
-- generating output names
-- calling `process_file`
-- collecting batch summary/errors
-- processing explicit retry queues
-- supporting safe cancel checks for GUI batch runs
-
-### `batch_queue.py`
-
-Responsible for:
-
-- scanning planned single/batch exports
-- marking canonical outputs that will be skipped
-- extracting failed input paths from batch errors
-
-### `export_report.py`
-
-Responsible for:
-
-- building JSON-serializable export reports
-- writing timestamped export report files
-
-### `file_watcher.py`
-
-Responsible for:
-
-- polling a folder without a watchdog dependency
-- processing only new or changed files
-- respecting safe stop/cancel callbacks
-
-### `resources.py`
-
-Responsible for:
-
-- resolving bundled resources in source and PyInstaller modes
-- resolving portable writable folders
-- creating expected `output/` and `logs/` folders
-
-### `diagnostics.py`
-
-Responsible for:
-
-- collecting runtime/package/path diagnostics
-- writing support JSON reports
-
-### `resolume_profiles.py`
-
-Responsible for:
-
-- defining safe output-oriented Resolume workflow profiles
-- avoiding unsafe Resolume project mutation
-
-### `cli.py`
-
-Thin command layer. Converts user args into `ProcessingOptions` and exposes healthcheck/profile/diagnostics commands.
+- conservative despill
+- transparent-pixel RGB cleanup
+- 1920x1080 canvas fitting
+- PNG export
 
 ### `app.py`
 
-Tkinter desktop app. Runs preview and export work in background threads so the UI does not freeze.
+Thin Tkinter desktop app. It selects one input file and one output folder, then runs the export service on a worker thread so the UI does not freeze.
 
-### `resolume_api.py`
+### `cli.py`
 
-Generic local REST client. It is intentionally conservative for v0.1. Future versions can add version-specific endpoints.
+Tiny command layer for `convert` and `rembg-check` only.
 
-## Future: Resolume deep integration
+## Deliberately removed from current scope
 
-Potential additions:
-
-- OSC trigger client.
-- Local REST endpoint mapping for loading clips.
-- WebSocket watcher for composition changes.
-- Watched-folder export profiles.
-- DXV/FFmpeg/Alley handoff helper.
+- batch folder processing
+- queue preview
+- retry-failed exports
+- user/bundled presets
+- JSON export reports
+- watch-folder processing
+- Resolume REST/webserver client
+- workflow profiles
+- WebP/effects/sticker controls

@@ -8,54 +8,35 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
-from dataclasses import dataclass
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
 from PIL import Image, ImageTk
 
-from .core.batch import process_single
 from .core.gui_settings import load_json_object, save_json_object, settings_path
 from .core.input_resolver import SUPPORTED_IMAGE_SUFFIXES, clean_path_text
-from .core.models import ProcessingOptions, ProcessResult
-from .core.naming import build_output_path
+from .core.models import ProcessResult
+from .core.resolume_export import (
+    ExportJob,
+    RESOLUME_CANVAS_SIZE,
+    RESOLUME_OUTPUT_FORMAT,
+    RESOLUME_OUTPUT_SUFFIX,
+    export_resolume_image,
+    resolume_processing_options,
+)
 from .core.validation import ensure_file
+
+__all__ = [
+    "AlphaDropperApp",
+    "ExportJob",
+    "RESOLUME_CANVAS_SIZE",
+    "RESOLUME_OUTPUT_FORMAT",
+    "RESOLUME_OUTPUT_SUFFIX",
+    "resolume_processing_options",
+]
 
 IMAGE_FILETYPES = [("Images", "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"), ("All", "*.*")]
 PREVIEW_SIZE = (420, 300)
-RESOLUME_CANVAS_SIZE = (1920, 1080)
-RESOLUME_OUTPUT_FORMAT = "png"
-RESOLUME_OUTPUT_SUFFIX = "_resolume"
-DEFAULT_REMBG_MODEL = "u2net"
-
-
-@dataclass(frozen=True)
-class ExportJob:
-    """One fixed Resolume image export request."""
-
-    input_path: Path
-    output_dir: Path
-    options: ProcessingOptions
-
-
-def resolume_processing_options(model: str = DEFAULT_REMBG_MODEL) -> ProcessingOptions:
-    """Return the fixed first-version GUI export settings."""
-
-    width, height = RESOLUME_CANVAS_SIZE
-    return ProcessingOptions(
-        remove_background=True,
-        rembg_model=model,
-        alpha_threshold=8,
-        feather_radius=0.8,
-        alpha_gamma=1.0,
-        despill_strength=0.35,
-        fit_mode="contain",
-        canvas_width=width,
-        canvas_height=height,
-        output_format=RESOLUME_OUTPUT_FORMAT,
-        suffix=RESOLUME_OUTPUT_SUFFIX,
-        overwrite=False,
-    )
 
 
 class AlphaDropperApp(tk.Tk):
@@ -245,11 +226,7 @@ class AlphaDropperApp(tk.Tk):
             messagebox.showerror("Invalid input", str(exc))
             return
 
-        job = ExportJob(
-            input_path=source,
-            output_dir=self._output_dir(),
-            options=resolume_processing_options(),
-        )
+        job = ExportJob(input_path=source, output_dir=self._output_dir())
         self._save_settings()
         self.export_button.configure(state=tk.DISABLED)
         self.status_var.set("Exporting...")
@@ -259,14 +236,7 @@ class AlphaDropperApp(tk.Tk):
 
     def _export_worker_fn(self, job: ExportJob) -> None:
         try:
-            output_path = build_output_path(
-                job.input_path,
-                job.output_dir,
-                suffix=job.options.normalized_suffix(),
-                extension=job.options.output_format,
-                overwrite=job.options.overwrite,
-            )
-            result = process_single(job.input_path, output_path, job.options)
+            result = export_resolume_image(job.input_path, job.output_dir, model=job.model)
             self.messages.put(("export_success", result))
         except Exception as exc:
             self.messages.put(("export_error", str(exc)))
@@ -362,7 +332,6 @@ class AlphaDropperApp(tk.Tk):
         try:
             save_json_object(settings_path(), self._settings_payload())
         except Exception:
-            # Settings persistence must never block the fixed export workflow.
             return
 
     def _on_close(self) -> None:

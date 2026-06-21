@@ -14,17 +14,15 @@ Wichtig:
 - Exporte landen im Ordner output, wenn kein anderer Output-Ordner gewaehlt wird.
 - Es wird nicht ueberschrieben; existierende Zieldateien bekommen automatisch nummerierte Namen.
 - Der erste Background-Removal-Export kann laenger dauern, weil ein lokales AI-Modell geladen wird.
-- Fuer Background Removal auf Windows eine normale CPython-x64-Version nutzen, am besten Python 3.13 oder 3.12.
+- Fuer Background Removal auf Windows eine normale CPython-x64-Version nutzen.
 - Nicht Python314t/free-threaded fuer rembg/onnxruntime verwenden.
 
 Fehlerdiagnose in der Entwickler-Version:
   python -m resolume_alpha_tool.cli rembg-check
-  python -m resolume_alpha_tool.cli diagnostics
 
 Ordnerstruktur:
 
 ResolumeAlphaDropper/
   ResolumeAlphaDropper.exe
   output/
-  logs/
   README_STARTEN.txt
