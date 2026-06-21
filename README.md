@@ -116,7 +116,12 @@ python -m resolume_alpha_tool.cli convert input.jpg output --target shirt-print
 .\scripts\build_portable.ps1
 ```
 
-The build script runs tests, checks the required `rembg` backend, and asks PyInstaller to collect the rembg/ONNX runtime packages.
+The build script runs tests, checks the required `rembg` backend, asks PyInstaller to collect the rembg/ONNX runtime packages, and writes these artifacts:
+
+```text
+release/AlphaPngExporter/AlphaPngExporter.exe
+release/AlphaPngExporter_Portable.zip
+```
 
 ## Tests and quality gates
 
