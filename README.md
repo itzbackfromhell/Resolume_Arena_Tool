@@ -1,9 +1,9 @@
 # Alpha PNG Exporter
 
-**Alpha PNG Exporter** is a local-first Windows desktop tool for creating transparent PNG assets from one normal image.
+**Alpha PNG Exporter** is a local-first Windows desktop tool for creating transparent PNG assets from normal images.
 
 ```text
-one image in
+image or folder in
   -> required local background removal with rembg
   -> transparent PNG export for Resolume or shirt/print upload
 ```
@@ -15,8 +15,10 @@ The app does not patch, inject into, or modify Resolume. It only writes image fi
 ### Resolume
 
 - transparent PNG
-- 1920x1080 canvas
-- `contain` fit mode
+- default 1920x1080 canvas
+- optional 3840x2160 and 1080x1080 presets
+- `contain` fit mode by default
+- optional `cover` or `stretch`
 - `_resolume` suffix
 - optimized for Resolume Arena/Avenue visual workflows
 
@@ -25,12 +27,26 @@ The app does not patch, inject into, or modify Resolume. It only writes image fi
 - transparent PNG
 - tighter crop around the motif
 - harder alpha edge than the Resolume mode
-- transparent padding around the motif
+- adjustable transparent padding around the motif
 - no 1920x1080 video canvas
 - `_shirt_print` suffix
 - intended for upload to print-on-demand sites such as shirt/product editors
 
 The tool refuses exports when background removal is disabled, missing, or produces a fully opaque/empty alpha result.
+
+## GUI workflow features
+
+The desktop app supports:
+
+- single-image export
+- folder batch export
+- optional recursive batch scan
+- batch export for the selected mode or both Resolume and Shirt/Print
+- collision-safe filenames instead of overwriting
+- output folder selection and persistent GUI settings
+- checkerboard, black, white, and alpha-matte preview modes
+- input/output alpha diagnostics with visible-content warnings
+- small safe edge cleanup profiles: `normal`, `soft`, `tight`, `grow`
 
 ## Important Python version note
 
@@ -114,6 +130,18 @@ Shirt/print export:
 
 ```powershell
 alpha-png convert input.jpg output --target shirt-print
+```
+
+Batch Resolume export:
+
+```powershell
+alpha-png batch input-folder output --target resolume
+```
+
+Batch both modes:
+
+```powershell
+alpha-png batch input-folder output --target resolume --target shirt-print
 ```
 
 The module entrypoint also works:
