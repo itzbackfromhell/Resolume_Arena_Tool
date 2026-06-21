@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import contextlib
+import ctypes
 import os
 import queue
 import subprocess
@@ -75,6 +76,7 @@ class AlphaDropperApp(tk.Tk):
         self.geometry("900x690")
         self.minsize(800, 620)
         self._apply_dark_theme()
+        self.after(0, self._apply_windows_dark_titlebar)
 
         self.settings = load_json_object(settings_path())
         if isinstance(self.settings.get("window_geometry"), str):
@@ -106,6 +108,30 @@ class AlphaDropperApp(tk.Tk):
         self._update_mode_help()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(100, self._drain_messages)
+
+    def _apply_windows_dark_titlebar(self) -> None:
+        """Ask Windows DWM to use the dark native title bar when available."""
+
+        if not sys.platform.startswith("win"):
+            return
+
+        with contextlib.suppress(AttributeError, OSError, tk.TclError):
+            self.update_idletasks()
+            hwnd = ctypes.c_void_p(self.winfo_id())
+            enabled = ctypes.c_int(1)
+            enabled_size = ctypes.c_int(ctypes.sizeof(enabled))
+
+            # 20 is DWMWA_USE_IMMERSIVE_DARK_MODE on current Windows builds.
+            # 19 is the older compatibility attribute used by some Windows 10 builds.
+            for attribute in (20, 19):
+                result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                    hwnd,
+                    ctypes.c_int(attribute),
+                    ctypes.byref(enabled),
+                    enabled_size,
+                )
+                if result == 0:
+                    break
 
     def _apply_dark_theme(self) -> None:
         """Apply a black/neon ttk theme across the focused desktop UI."""
@@ -168,20 +194,20 @@ class AlphaDropperApp(tk.Tk):
         )
         style.configure(
             "TButton",
-            background=DARK_THEME["accent"],
-            foreground=DARK_THEME["background"],
-            bordercolor=DARK_THEME["accent"],
+            background=DARK_THEME["background"],
+            foreground=DARK_THEME["heading"],
+            bordercolor=DARK_THEME["heading"],
             focusthickness=1,
             focuscolor=DARK_THEME["accent_hover"],
             padding=(10, 7),
-            relief="flat",
+            relief="solid",
         )
         style.map(
             "TButton",
             background=[
-                ("disabled", DARK_THEME["panel_alt"]),
+                ("disabled", DARK_THEME["background"]),
                 ("pressed", DARK_THEME["accent_pressed"]),
-                ("active", DARK_THEME["accent_hover"]),
+                ("active", DARK_THEME["accent"]),
             ],
             foreground=[
                 ("disabled", DARK_THEME["disabled"]),
