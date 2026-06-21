@@ -56,6 +56,26 @@ python -m pip install --upgrade pip
 python -m pip install -e ".[dev,rembg]"
 ```
 
+## One-command local verification
+
+Run all local gates and the required rembg backend probe:
+
+```powershell
+.\scripts\verify_local.ps1
+```
+
+If the virtual environment is stale, broken, or was created with the wrong interpreter:
+
+```powershell
+.\scripts\verify_local.ps1 -RecreateVenv
+```
+
+Run all gates and then launch the GUI:
+
+```powershell
+.\scripts\verify_local.ps1 -LaunchApp
+```
+
 ## Launch GUI
 
 ```powershell
@@ -74,7 +94,7 @@ resolume-alpha-gui
 python -m resolume_alpha_tool.cli rembg-check
 ```
 
-The first run can take longer because the local model may need to load or download into the model cache.
+The first run can take longer because the local model may need to load or download into the model cache. The check imports rembg, creates the model session, and runs a tiny background-removal probe so failures show up before using the GUI.
 
 ## CLI
 
@@ -104,6 +124,7 @@ The build script runs tests, checks the required `rembg` backend, and asks PyIns
 python -m compileall -q src tests
 python -m ruff check .
 python -m pytest
+python -m resolume_alpha_tool.cli rembg-check
 ```
 
 ## GUI docs
