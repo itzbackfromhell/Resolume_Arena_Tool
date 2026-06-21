@@ -46,6 +46,22 @@ TARGET_LABELS: dict[ExportTarget, str] = {
     "resolume": "Resolume 1920x1080",
     "shirt_print": "Shirt/Print transparent PNG",
 }
+DARK_THEME = {
+    "background": "#111318",
+    "panel": "#181b22",
+    "panel_alt": "#20242d",
+    "field": "#0f1117",
+    "text": "#f2f5f8",
+    "muted": "#aab2bf",
+    "disabled": "#69707d",
+    "accent": "#7aa2ff",
+    "accent_hover": "#8fb1ff",
+    "accent_pressed": "#5d84db",
+    "border": "#343a46",
+    "error": "#ff6b6b",
+}
+DARK_CHECKER_BASE = (32, 36, 45, 255)
+DARK_CHECKER_ALT = (49, 55, 68, 255)
 
 
 class AlphaDropperApp(tk.Tk):
@@ -56,6 +72,7 @@ class AlphaDropperApp(tk.Tk):
         self.title("Alpha PNG Exporter")
         self.geometry("900x690")
         self.minsize(800, 620)
+        self._apply_dark_theme()
 
         self.settings = load_json_object(settings_path())
         if isinstance(self.settings.get("window_geometry"), str):
@@ -88,6 +105,135 @@ class AlphaDropperApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(100, self._drain_messages)
 
+    def _apply_dark_theme(self) -> None:
+        """Apply a dark ttk theme across the focused desktop UI."""
+
+        self.configure(bg=DARK_THEME["background"])
+        self.option_add("*Background", DARK_THEME["background"])
+        self.option_add("*Foreground", DARK_THEME["text"])
+        self.option_add("*selectBackground", DARK_THEME["accent"])
+        self.option_add("*selectForeground", DARK_THEME["field"])
+        self.option_add("*insertBackground", DARK_THEME["text"])
+
+        style = ttk.Style(self)
+        try:
+            style.theme_use("clam")
+        except tk.TclError:
+            pass
+
+        style.configure(
+            ".",
+            background=DARK_THEME["background"],
+            foreground=DARK_THEME["text"],
+            fieldbackground=DARK_THEME["field"],
+            bordercolor=DARK_THEME["border"],
+            lightcolor=DARK_THEME["border"],
+            darkcolor=DARK_THEME["border"],
+            troughcolor=DARK_THEME["field"],
+            focuscolor=DARK_THEME["accent"],
+            font=("Segoe UI", 10),
+        )
+        style.configure("TFrame", background=DARK_THEME["background"])
+        style.configure(
+            "TLabelframe",
+            background=DARK_THEME["panel"],
+            bordercolor=DARK_THEME["border"],
+            relief="solid",
+        )
+        style.configure(
+            "TLabelframe.Label",
+            background=DARK_THEME["background"],
+            foreground=DARK_THEME["muted"],
+            font=("Segoe UI", 10, "bold"),
+        )
+        style.configure("TLabel", background=DARK_THEME["background"], foreground=DARK_THEME["text"])
+        style.configure(
+            "Title.TLabel",
+            background=DARK_THEME["background"],
+            foreground=DARK_THEME["text"],
+            font=("Segoe UI", 18, "bold"),
+        )
+        style.configure(
+            "Muted.TLabel",
+            background=DARK_THEME["background"],
+            foreground=DARK_THEME["muted"],
+        )
+        style.configure(
+            "Preview.TLabel",
+            background=DARK_THEME["panel_alt"],
+            foreground=DARK_THEME["muted"],
+            bordercolor=DARK_THEME["border"],
+            relief="solid",
+            padding=12,
+        )
+        style.configure(
+            "TButton",
+            background=DARK_THEME["accent"],
+            foreground=DARK_THEME["field"],
+            bordercolor=DARK_THEME["accent"],
+            focusthickness=1,
+            focuscolor=DARK_THEME["accent_hover"],
+            padding=(10, 7),
+            relief="flat",
+        )
+        style.map(
+            "TButton",
+            background=[
+                ("disabled", DARK_THEME["panel_alt"]),
+                ("pressed", DARK_THEME["accent_pressed"]),
+                ("active", DARK_THEME["accent_hover"]),
+            ],
+            foreground=[
+                ("disabled", DARK_THEME["disabled"]),
+                ("pressed", DARK_THEME["field"]),
+                ("active", DARK_THEME["field"]),
+            ],
+            bordercolor=[
+                ("disabled", DARK_THEME["border"]),
+                ("pressed", DARK_THEME["accent_pressed"]),
+                ("active", DARK_THEME["accent_hover"]),
+            ],
+        )
+        style.configure(
+            "TEntry",
+            fieldbackground=DARK_THEME["field"],
+            foreground=DARK_THEME["text"],
+            insertcolor=DARK_THEME["text"],
+            bordercolor=DARK_THEME["border"],
+            lightcolor=DARK_THEME["border"],
+            darkcolor=DARK_THEME["border"],
+            padding=(6, 5),
+        )
+        style.map(
+            "TEntry",
+            fieldbackground=[("disabled", DARK_THEME["panel_alt"])],
+            foreground=[("disabled", DARK_THEME["disabled"])],
+        )
+        style.configure(
+            "TRadiobutton",
+            background=DARK_THEME["panel"],
+            foreground=DARK_THEME["text"],
+            indicatorcolor=DARK_THEME["field"],
+            focuscolor=DARK_THEME["accent"],
+            padding=4,
+        )
+        style.map(
+            "TRadiobutton",
+            background=[
+                ("active", DARK_THEME["panel_alt"]),
+                ("selected", DARK_THEME["panel"]),
+            ],
+            foreground=[
+                ("disabled", DARK_THEME["disabled"]),
+                ("active", DARK_THEME["text"]),
+            ],
+            indicatorcolor=[
+                ("selected", DARK_THEME["accent"]),
+                ("pressed", DARK_THEME["accent_pressed"]),
+                ("active", DARK_THEME["accent_hover"]),
+            ],
+        )
+
     def _build_ui(self) -> None:
         root = ttk.Frame(self, padding=14)
         root.pack(fill=tk.BOTH, expand=True)
@@ -95,7 +241,7 @@ class AlphaDropperApp(tk.Tk):
         root.columnconfigure(1, weight=1)
         root.rowconfigure(2, weight=1)
 
-        ttk.Label(root, text="Alpha PNG Exporter", font=("Segoe UI", 18, "bold")).grid(
+        ttk.Label(root, text="Alpha PNG Exporter", style="Title.TLabel").grid(
             row=0,
             column=0,
             columnspan=2,
@@ -104,8 +250,13 @@ class AlphaDropperApp(tk.Tk):
         ttk.Label(
             root,
             text="One image -> required background removal -> transparent PNG for Resolume or shirt/print upload.",
+            style="Muted.TLabel",
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 12))
-        ttk.Label(root, textvariable=self.status_var).grid(row=0, column=1, sticky="e")
+        ttk.Label(root, textvariable=self.status_var, style="Muted.TLabel").grid(
+            row=0,
+            column=1,
+            sticky="e",
+        )
 
         self._build_preview_panel(root)
         self._build_path_panel(root)
@@ -123,9 +274,19 @@ class AlphaDropperApp(tk.Tk):
         output_box.rowconfigure(0, weight=1)
         output_box.columnconfigure(0, weight=1)
 
-        self.input_preview_label = ttk.Label(input_box, text="Select an image.", anchor="center")
+        self.input_preview_label = ttk.Label(
+            input_box,
+            text="Select an image.",
+            anchor="center",
+            style="Preview.TLabel",
+        )
         self.input_preview_label.grid(row=0, column=0, sticky="nsew")
-        self.output_preview_label = ttk.Label(output_box, text="Export result appears here.", anchor="center")
+        self.output_preview_label = ttk.Label(
+            output_box,
+            text="Export result appears here.",
+            anchor="center",
+            style="Preview.TLabel",
+        )
         self.output_preview_label.grid(row=0, column=0, sticky="nsew")
 
     def _build_path_panel(self, root: ttk.Frame) -> None:
@@ -152,7 +313,7 @@ class AlphaDropperApp(tk.Tk):
             padx=(8, 0),
         )
 
-        ttk.Label(panel, textvariable=self.input_status_var, foreground="#555555").grid(
+        ttk.Label(panel, textvariable=self.input_status_var, style="Muted.TLabel").grid(
             row=2,
             column=0,
             columnspan=3,
@@ -179,7 +340,7 @@ class AlphaDropperApp(tk.Tk):
             variable=self.export_target_var,
             command=self._update_mode_help,
         ).grid(row=0, column=1, sticky="w", padx=(0, 18))
-        ttk.Label(panel, textvariable=self.mode_help_var, foreground="#555555", wraplength=650).grid(
+        ttk.Label(panel, textvariable=self.mode_help_var, style="Muted.TLabel", wraplength=650).grid(
             row=0,
             column=2,
             sticky="w",
@@ -203,7 +364,7 @@ class AlphaDropperApp(tk.Tk):
             sticky="ew",
             padx=(6, 0),
         )
-        ttk.Label(panel, textvariable=self.result_var, foreground="#555555", wraplength=820).grid(
+        ttk.Label(panel, textvariable=self.result_var, style="Muted.TLabel", wraplength=820).grid(
             row=1,
             column=0,
             columnspan=2,
@@ -366,13 +527,13 @@ class AlphaDropperApp(tk.Tk):
         return ImageTk.PhotoImage(board)
 
     def _checkerboard(self, size: tuple[int, int]) -> Image.Image:
-        canvas = Image.new("RGBA", size, (210, 210, 210, 255))
+        canvas = Image.new("RGBA", size, DARK_CHECKER_BASE)
         tile = 12
         for y in range(0, size[1], tile):
             for x in range(0, size[0], tile):
                 if ((x // tile) + (y // tile)) % 2:
                     canvas.paste(
-                        (245, 245, 245, 255),
+                        DARK_CHECKER_ALT,
                         (x, y, min(x + tile, size[0]), min(y + tile, size[1])),
                     )
         return canvas
