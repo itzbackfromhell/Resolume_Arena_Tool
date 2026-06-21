@@ -30,7 +30,11 @@ If the target filename already exists, the app uses the collision-safe naming he
 
 ## Background removal dependency
 
-Background removal uses the optional local `rembg` backend. Install it before relying on the GUI:
+Background removal uses the optional local `rembg` backend. Use a standard CPython x64 interpreter, preferably Python 3.13 or 3.12 on Windows.
+
+Do not use a free-threaded Windows build such as `Python314t` / `cp314t` for the rembg workflow. That ABI can fail dependency resolution for the onnxruntime stack.
+
+Install the project with rembg from an activated venv:
 
 ```powershell
 python -m pip install -e ".[rembg]"

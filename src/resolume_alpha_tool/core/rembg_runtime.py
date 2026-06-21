@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import sys
+import sysconfig
 from importlib import metadata
 from typing import Any
 
 from .exceptions import DependencyMissingError, ProcessingError
 
-REMBG_INSTALL_HINT = 'Install/test with: python -m pip install -e ".[rembg]"'
+REMBG_INSTALL_HINT = (
+    'Install/test with a standard CPython x64 interpreter: python -m pip install -e ".[rembg]". '
+    "Do not use the free-threaded Windows build such as Python 3.14t for rembg/onnxruntime."
+)
 
 
 def package_version(name: str) -> str:
@@ -18,9 +22,23 @@ def package_version(name: str) -> str:
         return "not installed"
 
 
+def is_free_threaded_python() -> bool:
+    """Return True when running on a free-threaded CPython build."""
+
+    gil_disabled = sysconfig.get_config_var("Py_GIL_DISABLED")
+    return bool(gil_disabled)
+
+
+def python_abi_note() -> str:
+    if is_free_threaded_python():
+        return "free-threaded/3.14t ABI detected; use standard CPython x64 for rembg"
+    return "standard CPython ABI"
+
+
 def runtime_summary() -> str:
     return (
         f"python={sys.version.split()[0]}, "
+        f"abi={python_abi_note()}, "
         f"rembg={package_version('rembg')}, "
         f"onnxruntime={package_version('onnxruntime')}, "
         f"pillow={package_version('Pillow')}"
@@ -28,6 +46,11 @@ def runtime_summary() -> str:
 
 
 def import_rembg_symbols() -> tuple[Any, Any]:
+    if is_free_threaded_python():
+        raise DependencyMissingError(
+            "rembg/onnxruntime is not supported by this Windows free-threaded Python build. "
+            f"{REMBG_INSTALL_HINT}. Runtime: {runtime_summary()}"
+        )
     try:
         from rembg import new_session, remove  # type: ignore
     except Exception as exc:  # pragma: no cover - optional dependency path

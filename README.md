@@ -13,6 +13,21 @@ one image in
 
 The app does not patch, inject into, or modify Resolume. It only writes image files into a normal output folder.
 
+## Important Python version note
+
+For background removal on Windows, use a **standard CPython x64** install, preferably Python **3.13** or **3.12**.
+
+Do **not** use the free-threaded Windows build such as `Python314t` / `cp314t` for the rembg workflow. The local background-removal stack depends on `onnxruntime`, and the free-threaded Windows ABI can fail dependency resolution even when the normal CPython Windows wheel exists.
+
+Check what interpreter PowerShell is using:
+
+```powershell
+py -0p
+python -c "import sys, sysconfig; print(sys.executable); print(sys.version); print('Py_GIL_DISABLED=', sysconfig.get_config_var('Py_GIL_DISABLED'))"
+```
+
+If `Py_GIL_DISABLED` prints `1`, use another standard Python interpreter for this project.
+
 ## Current GUI scope
 
 The GUI is the first clean user path and does exactly one job:
@@ -42,9 +57,13 @@ The repository still contains reusable core services and CLI commands for automa
 ```powershell
 git clone https://github.com/itzbackfromhell/Resolume_Arena_Tool.git
 cd Resolume_Arena_Tool
+py -3.13 -m venv .venv
+.\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -e ".[dev,rembg]"
 ```
+
+If you only have Python 3.12 installed, use `py -3.12 -m venv .venv` instead.
 
 Minimal install without background removal support:
 
