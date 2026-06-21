@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
 from dataclasses import replace
 from pathlib import Path
@@ -10,7 +11,9 @@ from pathlib import Path
 from PIL import Image
 
 from .core.batch_export import BatchExportRequest, export_batch, normalize_batch_targets
+from .core.error_ux import build_user_error
 from .core.exceptions import AlphaDropperError
+from .core.logging_config import configure_logging
 from .core.models import ProcessResult
 from .core.output_validation import validate_output_file
 from .core.rembg_runtime import rembg_healthcheck, runtime_summary
@@ -28,6 +31,7 @@ from .core.validation import ensure_file
 
 RESOLUME_PRESET_CHOICES = ("1080p", "4k", "square-1080", "square_1080")
 FIT_MODE_CHOICES = ("contain", "cover", "stretch")
+LOGGER = logging.getLogger("resolume_alpha_tool.cli")
 
 
 def _resolved_model(args: argparse.Namespace) -> str:
@@ -55,9 +59,23 @@ def _options_for_target(args: argparse.Namespace, target_label: str):
     return options
 
 
+def _add_runtime_options(parser: argparse.ArgumentParser) -> None:
+    parser.add_argument(
+        "--verbose",
+        action="store_true",
+        help="Print debug failure details to stderr and write DEBUG logs.",
+    )
+    parser.add_argument(
+        "--no-log-file",
+        action="store_true",
+        help="Disable the per-user log file for this command.",
+    )
+
+
 def _add_single_export_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--target", choices=CLI_TARGET_CHOICES, default="resolume")
     _add_shared_export_options(parser)
+    _add_runtime_options(parser)
 
 
 def _add_batch_export_options(parser: argparse.ArgumentParser) -> None:
@@ -71,6 +89,7 @@ def _add_batch_export_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--recursive", action="store_true")
     parser.add_argument("--report", help="Write a JSON batch report to this path.")
     _add_shared_export_options(parser)
+    _add_runtime_options(parser)
 
 
 def _add_shared_export_options(parser: argparse.ArgumentParser) -> None:
@@ -100,6 +119,7 @@ def _add_shared_export_options(parser: argparse.ArgumentParser) -> None:
 def cmd_convert(args: argparse.Namespace) -> int:
     target = normalize_export_target(args.target)
     options = _options_for_target(args, args.target)
+    LOGGER.info("Starting single export: target=%s input=%s output_dir=%s", target, args.input, args.output_dir)
     result = export_alpha_image(
         Path(args.input),
         Path(args.output_dir),
@@ -108,6 +128,7 @@ def cmd_convert(args: argparse.Namespace) -> int:
         options=options,
         on_progress=print,
     )
+    LOGGER.info("Single export complete: output=%s size=%sx%s", result.output_path, result.width, result.height)
     print(f"DONE {result.output_path} ({result.width}x{result.height})")
     return 0
 
@@ -121,6 +142,13 @@ def cmd_remove(args: argparse.Namespace) -> int:
 def cmd_batch(args: argparse.Namespace) -> int:
     targets = normalize_batch_targets(args.target or ["resolume"])
     options_by_target = {target: _options_for_target(args, target) for target in targets}
+    LOGGER.info(
+        "Starting batch export: targets=%s input_dir=%s output_dir=%s recursive=%s",
+        ",".join(targets),
+        args.input_dir,
+        args.output_dir,
+        args.recursive,
+    )
     summary = export_batch(
         BatchExportRequest(
             input_dir=Path(args.input_dir),
@@ -133,6 +161,13 @@ def cmd_batch(args: argparse.Namespace) -> int:
         ),
         on_progress=print,
     )
+    LOGGER.info(
+        "Batch export complete: exported=%s failed=%s total=%s output_dir=%s",
+        summary.exported_count,
+        summary.failed_count,
+        summary.total_count,
+        summary.output_dir,
+    )
     print(
         f"DONE batch: {summary.exported_count} exported, "
         f"{summary.failed_count} failed, {summary.total_count} total"
@@ -144,6 +179,7 @@ def cmd_validate(args: argparse.Namespace) -> int:
     target = normalize_export_target(args.target)
     options = _options_for_target(args, args.target)
     path = ensure_file(Path(args.input))
+    LOGGER.info("Validating output: target=%s path=%s", target, path)
     with Image.open(path) as image:
         result = ProcessResult(
             input_path=path,
@@ -170,7 +206,9 @@ def cmd_rembg_check(args: argparse.Namespace) -> int:
     try:
         print(rembg_healthcheck(args.model))
     except Exception as exc:
-        print(f"rembg check failed: {exc}")
+        LOGGER.exception("rembg healthcheck failed")
+        user_error = build_user_error(exc)
+        print(user_error.as_cli_text(verbose=bool(args.verbose)), file=sys.stderr)
         return 1
     return 0
 
@@ -213,13 +251,16 @@ def build_parser() -> argparse.ArgumentParser:
     validate.add_argument("--shirt-padding", type=int, default=96)
     validate.add_argument("--model", default=None)
     validate.add_argument("--overwrite", action="store_true")
+    _add_runtime_options(validate)
     validate.set_defaults(func=cmd_validate)
 
     rembg = sub.add_parser("rembg-check", help="Test required rembg backend and model session.")
     rembg.add_argument("--model", default=DEFAULT_REMBG_MODEL)
+    _add_runtime_options(rembg)
     rembg.set_defaults(func=cmd_rembg_check)
 
     version = sub.add_parser("version", help="Print the package version.")
+    _add_runtime_options(version)
     version.set_defaults(func=cmd_version)
 
     return parser
@@ -228,10 +269,15 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    verbose = bool(getattr(args, "verbose", False))
+    logger = configure_logging(verbose=verbose, log_to_file=not bool(getattr(args, "no_log_file", False)))
     try:
+        logger.debug("Running CLI command: %s", getattr(args, "command", "unknown"))
         return args.func(args)
     except (AlphaDropperError, OSError, ValueError) as exc:
-        print(f"ERROR: {exc}", file=sys.stderr)
+        logger.exception("CLI command failed: %s", getattr(args, "command", "unknown"))
+        user_error = build_user_error(exc)
+        print(user_error.as_cli_text(verbose=verbose), file=sys.stderr)
         return 1
 
 
