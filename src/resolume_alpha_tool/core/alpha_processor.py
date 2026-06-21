@@ -49,6 +49,22 @@ def _apply_alpha_gamma(alpha: Image.Image, gamma: float) -> Image.Image:
     return alpha.point(table)
 
 
+def _repeat_alpha_filter(alpha: Image.Image, image_filter: ImageFilter.Filter, amount: int) -> Image.Image:
+    cleaned = alpha
+    for _ in range(max(0, int(amount))):
+        cleaned = cleaned.filter(image_filter)
+    return cleaned
+
+
+def _apply_edge_cleanup(alpha: Image.Image, options: ProcessingOptions) -> Image.Image:
+    cleaned = alpha
+    if options.alpha_erode > 0:
+        cleaned = _repeat_alpha_filter(cleaned, ImageFilter.MinFilter(3), options.alpha_erode)
+    if options.alpha_dilate > 0:
+        cleaned = _repeat_alpha_filter(cleaned, ImageFilter.MaxFilter(3), options.alpha_dilate)
+    return cleaned
+
+
 def _despill_rgb(image: Image.Image, alpha: Image.Image, strength: float) -> Image.Image:
     """Reduce visible matte color in semi-transparent pixels."""
 
@@ -135,6 +151,7 @@ def process_image_object(image: Image.Image, options: ProcessingOptions) -> Imag
 
     alpha = rgba.getchannel("A")
     alpha = _apply_alpha_threshold(alpha, options.alpha_threshold)
+    alpha = _apply_edge_cleanup(alpha, options)
 
     if options.feather_radius > 0:
         alpha = alpha.filter(ImageFilter.GaussianBlur(radius=options.feather_radius))
