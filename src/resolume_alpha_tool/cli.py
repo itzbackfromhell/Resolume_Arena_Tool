@@ -69,6 +69,7 @@ def _add_batch_export_options(parser: argparse.ArgumentParser) -> None:
         help="Export target. Pass twice to export both modes. Default: resolume.",
     )
     parser.add_argument("--recursive", action="store_true")
+    parser.add_argument("--report", help="Write a JSON batch report to this path.")
     _add_shared_export_options(parser)
 
 
@@ -127,6 +128,7 @@ def cmd_batch(args: argparse.Namespace) -> int:
             targets=targets,
             model=_resolved_model(args),
             recursive=args.recursive,
+            report_path=Path(args.report) if args.report else None,
             options_by_target=options_by_target,
         ),
         on_progress=print,
