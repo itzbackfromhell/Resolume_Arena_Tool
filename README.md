@@ -85,6 +85,12 @@ python -m resolume_alpha_tool.app
 or, after installing console scripts:
 
 ```powershell
+alpha-png-gui
+```
+
+Legacy aliases still work:
+
+```powershell
 resolume-alpha-gui
 ```
 
@@ -101,13 +107,19 @@ The first run can take longer because the local model may need to load or downlo
 Resolume export:
 
 ```powershell
-python -m resolume_alpha_tool.cli convert input.jpg output --target resolume
+alpha-png convert input.jpg output --target resolume
 ```
 
 Shirt/print export:
 
 ```powershell
-python -m resolume_alpha_tool.cli convert input.jpg output --target shirt-print
+alpha-png convert input.jpg output --target shirt-print
+```
+
+The module entrypoint also works:
+
+```powershell
+python -m resolume_alpha_tool.cli convert input.jpg output --target resolume
 ```
 
 ## Portable EXE build
