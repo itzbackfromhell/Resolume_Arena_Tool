@@ -10,6 +10,7 @@ def test_dark_theme_defines_required_palette_tokens() -> None:
         "text",
         "muted",
         "disabled",
+        "heading",
         "accent",
         "accent_hover",
         "accent_pressed",
@@ -18,8 +19,10 @@ def test_dark_theme_defines_required_palette_tokens() -> None:
     }
 
     assert required <= DARK_THEME.keys()
-    assert DARK_THEME["background"].startswith("#")
-    assert DARK_THEME["text"].startswith("#")
+    assert DARK_THEME["background"] == "#000000"
+    assert DARK_THEME["panel"] == "#000000"
+    assert DARK_THEME["field"] == "#000000"
+    assert DARK_THEME["heading"] == "#39ff14"
 
 
 def test_dark_checkerboard_uses_opaque_rgba_colors() -> None:
