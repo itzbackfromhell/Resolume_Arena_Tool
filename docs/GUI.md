@@ -1,23 +1,25 @@
 # GUI Workflow
 
-Resolume Alpha Dropper's desktop GUI is intentionally focused:
+Alpha PNG Exporter's desktop GUI is intentionally focused:
 
 ```text
-one image in -> required local background removal -> transparent 1920x1080 PNG out
+one image in -> required local background removal -> transparent PNG out
 ```
 
-The GUI does not modify Resolume, inject into Resolume, or require Resolume to be installed. It only creates a transparent PNG file that can be dragged/imported into Resolume Arena/Avenue.
+The GUI does not modify Resolume, inject into Resolume, or require Resolume to be installed. It only creates transparent PNG files.
 
 ## Main flow
 
 1. Click **Choose image** and select exactly one supported image.
 2. Click **Choose folder** if you do not want to use the default `output` folder.
-3. Click **Convert image for Resolume**.
-4. Drag/import the exported PNG into Resolume.
+3. Pick **Resolume** or **Shirt/Print**.
+4. Click the convert button.
 
-## Fixed GUI export settings
+## Export modes
 
-Every GUI export uses the same Resolume-oriented settings:
+### Resolume
+
+Use this for VJ/video workflows:
 
 - remove background: enabled and required
 - output format: PNG
@@ -26,9 +28,22 @@ Every GUI export uses the same Resolume-oriented settings:
 - suffix: `_resolume`
 - overwrite: disabled
 
+### Shirt/Print
+
+Use this for print-on-demand uploads:
+
+- remove background: enabled and required
+- output format: PNG
+- tighter crop around the motif
+- harder alpha edge than Resolume mode
+- transparent padding around the motif
+- no 1920x1080 video canvas
+- suffix: `_shirt_print`
+- overwrite: disabled
+
 If the target filename already exists, the app uses the collision-safe naming helper and writes a numbered output instead of overwriting user files.
 
-The export path refuses to save a final result when background removal is disabled, when the PNG is not 1920x1080, when no alpha channel is present, or when the alpha result is fully opaque/fully transparent.
+The export path refuses to save a final result when background removal is disabled, when no alpha channel is present, or when the alpha result is fully opaque/fully transparent. Resolume mode additionally requires 1920x1080 output.
 
 ## Background removal dependency
 

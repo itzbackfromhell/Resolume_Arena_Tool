@@ -1,17 +1,21 @@
-Resolume Alpha Dropper - Starten
-================================
+Alpha PNG Exporter - Starten
+============================
 
 1. ZIP entpacken.
 2. ResolumeAlphaDropper.exe starten.
 3. Ein einzelnes Input-Bild waehlen.
 4. Output-Ordner pruefen oder auswaehlen.
-5. Convert image for Resolume druecken.
-6. Die exportierte PNG-Datei in Resolume ziehen/importieren.
+5. Export-Typ waehlen:
+   - Resolume: 1920x1080 transparente PNG fuer Arena/Avenue.
+   - Shirt/Print: zugeschnittene transparente PNG fuer Shirtinator/Print-Seiten.
+6. Convert druecken.
+7. Die exportierte PNG-Datei verwenden.
 
 Wichtig:
-- Die GUI ist absichtlich simpel: ein Bild rein, Background weg, Resolume-PNG raus.
 - Background Removal ist Pflicht. Wenn rembg/onnxruntime nicht funktioniert, bricht der Export mit Fehler ab.
-- Die App prueft, dass der Export PNG, 1920x1080 und transparent ist.
+- Resolume-Dateien enden auf _resolume.png.
+- Shirt/Print-Dateien enden auf _shirt_print.png.
+- Die App prueft, dass der Export PNG und transparent ist.
 - Die App veraendert Resolume nicht.
 - Exporte landen im Ordner output, wenn kein anderer Output-Ordner gewaehlt wird.
 - Es wird nicht ueberschrieben; existierende Zieldateien bekommen automatisch nummerierte Namen.

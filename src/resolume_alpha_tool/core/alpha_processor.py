@@ -1,4 +1,4 @@
-"""Image-processing pipeline for one Resolume alpha asset."""
+"""Image-processing pipeline for one alpha asset."""
 
 from __future__ import annotations
 
@@ -74,6 +74,24 @@ def _cleanup_transparent_rgb(image: Image.Image) -> Image.Image:
     return Image.composite(black, rgba, zero_mask).convert("RGBA")
 
 
+def _pad_transparent(image: Image.Image, padding: int) -> Image.Image:
+    padding = max(0, int(padding))
+    rgba = image.convert("RGBA")
+    if padding <= 0:
+        return rgba
+    canvas = Image.new("RGBA", (rgba.width + padding * 2, rgba.height + padding * 2), (0, 0, 0, 0))
+    canvas.alpha_composite(rgba, (padding, padding))
+    return canvas
+
+
+def _trim_to_alpha(image: Image.Image, padding: int) -> Image.Image:
+    rgba = image.convert("RGBA")
+    bbox = rgba.getchannel("A").getbbox()
+    if bbox is None:
+        return _pad_transparent(rgba, padding)
+    return _pad_transparent(rgba.crop(bbox), padding)
+
+
 def _fit_to_canvas(image: Image.Image, options: ProcessingOptions) -> Image.Image:
     if options.fit_mode == "none":
         return image.convert("RGBA")
@@ -132,6 +150,9 @@ def process_image_object(image: Image.Image, options: ProcessingOptions) -> Imag
 
     if options.transparent_rgb_cleanup:
         rgba = _cleanup_transparent_rgb(rgba)
+
+    if options.trim_to_alpha:
+        rgba = _trim_to_alpha(rgba, options.padding)
 
     return _fit_to_canvas(rgba, options)
 

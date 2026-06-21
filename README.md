@@ -1,15 +1,36 @@
-# Resolume Alpha Dropper
+# Alpha PNG Exporter
 
-**Resolume Alpha Dropper** is a local-first Windows desktop tool for creating one transparent PNG asset for Resolume Arena/Avenue from one normal image.
+**Alpha PNG Exporter** is a local-first Windows desktop tool for creating transparent PNG assets from one normal image.
 
 ```text
 one image in
   -> required local background removal with rembg
-  -> transparent 1920x1080 PNG export
-  -> drag/import into Resolume
+  -> transparent PNG export for Resolume or shirt/print upload
 ```
 
 The app does not patch, inject into, or modify Resolume. It only writes image files into a normal output folder.
+
+## Export modes
+
+### Resolume
+
+- transparent PNG
+- 1920x1080 canvas
+- `contain` fit mode
+- `_resolume` suffix
+- optimized for Resolume Arena/Avenue visual workflows
+
+### Shirt/Print
+
+- transparent PNG
+- tighter crop around the motif
+- harder alpha edge than the Resolume mode
+- transparent padding around the motif
+- no 1920x1080 video canvas
+- `_shirt_print` suffix
+- intended for upload to print-on-demand sites such as shirt/product editors
+
+The tool refuses exports when background removal is disabled, missing, or produces a fully opaque/empty alpha result.
 
 ## Important Python version note
 
@@ -23,19 +44,6 @@ python -c "import sys, sysconfig; print(sys.executable); print(sys.version); pri
 ```
 
 If `Py_GIL_DISABLED` prints `1`, use another standard Python interpreter for this project.
-
-## Current scope
-
-The app does exactly one job:
-
-- select one image
-- remove the background with the local `rembg` backend
-- fit the result onto a transparent 1920x1080 canvas
-- save a PNG with the `_resolume` suffix
-- avoid overwriting existing files by using numbered collision-safe names
-- refuse exports when background removal is disabled, missing, or produces a fully opaque/empty alpha result
-
-Batch export, queue preview, retry-failed, presets, reports, watch-folder mode, Resolume REST checks, and power-user export controls have been removed from the focused app path.
 
 ## Install
 
@@ -70,10 +78,16 @@ The first run can take longer because the local model may need to load or downlo
 
 ## CLI
 
-Convert one image from PowerShell:
+Resolume export:
 
 ```powershell
-python -m resolume_alpha_tool.cli convert input.jpg output
+python -m resolume_alpha_tool.cli convert input.jpg output --target resolume
+```
+
+Shirt/print export:
+
+```powershell
+python -m resolume_alpha_tool.cli convert input.jpg output --target shirt-print
 ```
 
 ## Portable EXE build

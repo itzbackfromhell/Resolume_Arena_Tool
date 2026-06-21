@@ -8,6 +8,7 @@ from typing import Literal
 
 ImageFormat = Literal["png"]
 FitMode = Literal["none", "contain", "cover", "stretch"]
+ExportTarget = Literal["resolume", "shirt_print"]
 
 
 @dataclass(frozen=True)
@@ -21,6 +22,8 @@ class ProcessingOptions:
     alpha_gamma: float = 1.0
     despill_strength: float = 0.35
     transparent_rgb_cleanup: bool = True
+    trim_to_alpha: bool = False
+    padding: int = 0
     fit_mode: FitMode = "none"
     canvas_width: int | None = None
     canvas_height: int | None = None

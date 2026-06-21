@@ -1,4 +1,4 @@
-"""Focused Tkinter GUI for one Resolume-ready alpha image export."""
+"""Focused Tkinter GUI for one background-removed alpha image export."""
 
 from __future__ import annotations
 
@@ -15,13 +15,16 @@ from PIL import Image, ImageTk
 
 from .core.gui_settings import load_json_object, save_json_object, settings_path
 from .core.input_resolver import SUPPORTED_IMAGE_SUFFIXES, clean_path_text
-from .core.models import ProcessResult
+from .core.models import ExportTarget, ProcessResult
 from .core.resolume_export import (
     RESOLUME_CANVAS_SIZE,
     RESOLUME_OUTPUT_FORMAT,
     RESOLUME_OUTPUT_SUFFIX,
+    SHIRT_PRINT_OUTPUT_SUFFIX,
     ExportJob,
-    export_resolume_image,
+    export_alpha_image,
+    normalize_export_target,
+    processing_options_for_target,
     resolume_processing_options,
 )
 from .core.validation import ensure_file
@@ -32,21 +35,27 @@ __all__ = [
     "RESOLUME_CANVAS_SIZE",
     "RESOLUME_OUTPUT_FORMAT",
     "RESOLUME_OUTPUT_SUFFIX",
+    "SHIRT_PRINT_OUTPUT_SUFFIX",
+    "processing_options_for_target",
     "resolume_processing_options",
 ]
 
 IMAGE_FILETYPES = [("Images", "*.png *.jpg *.jpeg *.webp *.bmp *.tif *.tiff"), ("All", "*.*")]
 PREVIEW_SIZE = (420, 300)
+TARGET_LABELS: dict[ExportTarget, str] = {
+    "resolume": "Resolume 1920x1080",
+    "shirt_print": "Shirt/Print transparent PNG",
+}
 
 
 class AlphaDropperApp(tk.Tk):
-    """Minimal desktop GUI: one image in, one Resolume-ready PNG out."""
+    """Minimal desktop GUI: one image in, one transparent PNG out."""
 
     def __init__(self) -> None:
         super().__init__()
         self.title("Resolume Alpha Dropper")
-        self.geometry("860x620")
-        self.minsize(760, 540)
+        self.geometry("900x690")
+        self.minsize(800, 620)
 
         self.settings = load_json_object(settings_path())
         if isinstance(self.settings.get("window_geometry"), str):
@@ -58,15 +67,24 @@ class AlphaDropperApp(tk.Tk):
         self.output_preview_ref: ImageTk.PhotoImage | None = None
         self.last_output_path: Path | None = None
 
+        saved_target = str(self.settings.get("export_target", "resolume"))
+        try:
+            normalized_target = normalize_export_target(saved_target)
+        except Exception:
+            normalized_target = "resolume"
+
         self.input_var = tk.StringVar(value=str(self.settings.get("input_path", "")))
         self.output_var = tk.StringVar(value=str(self.settings.get("output_dir", Path.cwd() / "output")))
+        self.export_target_var = tk.StringVar(value=normalized_target)
         self.status_var = tk.StringVar(value="Ready")
         self.input_status_var = tk.StringVar(value="No input selected.")
-        self.result_var = tk.StringVar(value="Select one image and export it for Resolume.")
+        self.result_var = tk.StringVar(value="Select one image and choose an export type.")
+        self.mode_help_var = tk.StringVar(value="")
 
         self._build_ui()
         self._bind_events()
         self._update_input_status()
+        self._update_mode_help()
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(100, self._drain_messages)
 
@@ -77,7 +95,7 @@ class AlphaDropperApp(tk.Tk):
         root.columnconfigure(1, weight=1)
         root.rowconfigure(2, weight=1)
 
-        ttk.Label(root, text="Resolume Alpha Dropper", font=("Segoe UI", 18, "bold")).grid(
+        ttk.Label(root, text="Alpha PNG Exporter", font=("Segoe UI", 18, "bold")).grid(
             row=0,
             column=0,
             columnspan=2,
@@ -85,12 +103,13 @@ class AlphaDropperApp(tk.Tk):
         )
         ttk.Label(
             root,
-            text="One image -> background removed -> transparent 1920x1080 PNG for Resolume.",
+            text="One image -> required background removal -> transparent PNG for Resolume or shirt/print upload.",
         ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(0, 12))
         ttk.Label(root, textvariable=self.status_var).grid(row=0, column=1, sticky="e")
 
         self._build_preview_panel(root)
         self._build_path_panel(root)
+        self._build_mode_panel(root)
         self._build_action_panel(root)
 
     def _build_preview_panel(self, root: ttk.Frame) -> None:
@@ -141,15 +160,40 @@ class AlphaDropperApp(tk.Tk):
             pady=(6, 0),
         )
 
+    def _build_mode_panel(self, root: ttk.Frame) -> None:
+        panel = ttk.LabelFrame(root, text="Export type", padding=10)
+        panel.grid(row=4, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        panel.columnconfigure(2, weight=1)
+
+        ttk.Radiobutton(
+            panel,
+            text="Resolume",
+            value="resolume",
+            variable=self.export_target_var,
+            command=self._update_mode_help,
+        ).grid(row=0, column=0, sticky="w", padx=(0, 18))
+        ttk.Radiobutton(
+            panel,
+            text="Shirt/Print",
+            value="shirt_print",
+            variable=self.export_target_var,
+            command=self._update_mode_help,
+        ).grid(row=0, column=1, sticky="w", padx=(0, 18))
+        ttk.Label(panel, textvariable=self.mode_help_var, foreground="#555555", wraplength=650).grid(
+            row=0,
+            column=2,
+            sticky="w",
+        )
+
     def _build_action_panel(self, root: ttk.Frame) -> None:
         panel = ttk.Frame(root)
-        panel.grid(row=4, column=0, columnspan=2, sticky="ew")
+        panel.grid(row=5, column=0, columnspan=2, sticky="ew")
         panel.columnconfigure(0, weight=1)
         panel.columnconfigure(1, weight=1)
 
         self.export_button = ttk.Button(
             panel,
-            text="Convert image for Resolume",
+            text="Convert image",
             command=self._start_export,
         )
         self.export_button.grid(row=0, column=0, sticky="ew", padx=(0, 6))
@@ -159,7 +203,7 @@ class AlphaDropperApp(tk.Tk):
             sticky="ew",
             padx=(6, 0),
         )
-        ttk.Label(panel, textvariable=self.result_var, foreground="#555555", wraplength=760).grid(
+        ttk.Label(panel, textvariable=self.result_var, foreground="#555555", wraplength=820).grid(
             row=1,
             column=0,
             columnspan=2,
@@ -169,6 +213,7 @@ class AlphaDropperApp(tk.Tk):
 
     def _bind_events(self) -> None:
         self.input_var.trace_add("write", lambda *_: self._update_input_status())
+        self.export_target_var.trace_add("write", lambda *_: self._update_mode_help())
         self.input_entry.bind("<Return>", lambda *_: self._update_input_status())
         self.input_entry.bind("<FocusOut>", lambda *_: self._update_input_status())
 
@@ -189,6 +234,20 @@ class AlphaDropperApp(tk.Tk):
     def _output_dir(self) -> Path:
         raw = clean_path_text(self.output_var.get())
         return Path(raw).expanduser() if raw else Path.cwd() / "output"
+
+    def _export_target(self) -> ExportTarget:
+        return normalize_export_target(self.export_target_var.get())
+
+    def _update_mode_help(self) -> None:
+        target = self._export_target()
+        if target == "shirt_print":
+            self.mode_help_var.set(
+                "Transparent PNG for print shops: tighter crop, harder alpha edge, padded motif, no 1920x1080 canvas."
+            )
+            self.export_button.configure(text="Convert for Shirt/Print")
+        else:
+            self.mode_help_var.set("Transparent 1920x1080 PNG for Resolume Arena/Avenue visuals.")
+            self.export_button.configure(text="Convert for Resolume")
 
     def _update_input_status(self) -> None:
         path = self._input_path()
@@ -226,17 +285,18 @@ class AlphaDropperApp(tk.Tk):
             messagebox.showerror("Invalid input", str(exc))
             return
 
-        job = ExportJob(input_path=source, output_dir=self._output_dir())
+        job = ExportJob(input_path=source, output_dir=self._output_dir(), target=self._export_target())
         self._save_settings()
         self.export_button.configure(state=tk.DISABLED)
+        label = TARGET_LABELS[job.target]
         self.status_var.set("Exporting...")
-        self.result_var.set("Removing background and writing Resolume PNG...")
+        self.result_var.set(f"Removing background and writing {label}...")
         self.worker = threading.Thread(target=self._export_worker_fn, args=(job,), daemon=True)
         self.worker.start()
 
     def _export_worker_fn(self, job: ExportJob) -> None:
         try:
-            result = export_resolume_image(job.input_path, job.output_dir, model=job.model)
+            result = export_alpha_image(job.input_path, job.output_dir, target=job.target, model=job.model)
             self.messages.put(("export_success", result))
         except Exception as exc:
             self.messages.put(("export_error", str(exc)))
@@ -257,6 +317,7 @@ class AlphaDropperApp(tk.Tk):
                     self.result_var.set(f"Export failed: {payload}")
                 elif kind == "export_finished":
                     self.export_button.configure(state=tk.NORMAL)
+                    self._update_mode_help()
                     if self.status_var.get() == "Exporting...":
                         self.status_var.set("Ready")
         except queue.Empty:
@@ -325,6 +386,7 @@ class AlphaDropperApp(tk.Tk):
         return {
             "input_path": clean_path_text(self.input_var.get()),
             "output_dir": clean_path_text(self.output_var.get()),
+            "export_target": self.export_target_var.get(),
             "window_geometry": self.geometry(),
         }
 

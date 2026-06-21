@@ -8,9 +8,15 @@ from resolume_alpha_tool.core.resolume_export import (
     RESOLUME_CANVAS_SIZE,
     RESOLUME_OUTPUT_FORMAT,
     RESOLUME_OUTPUT_SUFFIX,
+    SHIRT_PRINT_OUTPUT_SUFFIX,
+    build_alpha_output_path,
     build_resolume_output_path,
+    export_alpha_image,
     export_resolume_image,
+    normalize_export_target,
+    processing_options_for_target,
     resolume_processing_options,
+    shirt_print_processing_options,
 )
 
 
@@ -31,14 +37,41 @@ def test_resolume_processing_options_are_fixed() -> None:
     assert options.output_format == RESOLUME_OUTPUT_FORMAT == "png"
     assert options.suffix == RESOLUME_OUTPUT_SUFFIX == "_resolume"
     assert options.fit_mode == "contain"
+    assert options.trim_to_alpha is False
     assert (options.canvas_width, options.canvas_height) == RESOLUME_CANVAS_SIZE == (1920, 1080)
     assert options.overwrite is False
+
+
+def test_shirt_print_processing_options_are_fixed() -> None:
+    options = shirt_print_processing_options()
+
+    assert options.remove_background is True
+    assert options.output_format == RESOLUME_OUTPUT_FORMAT == "png"
+    assert options.suffix == SHIRT_PRINT_OUTPUT_SUFFIX == "_shirt_print"
+    assert options.fit_mode == "none"
+    assert options.trim_to_alpha is True
+    assert options.padding == 96
+    assert options.canvas_width is None
+    assert options.canvas_height is None
+    assert options.alpha_threshold > resolume_processing_options().alpha_threshold
+
+
+def test_normalize_export_target_accepts_cli_spelling() -> None:
+    assert normalize_export_target("shirt-print") == "shirt_print"
+    assert normalize_export_target("shirt_print") == "shirt_print"
+    assert normalize_export_target("resolume") == "resolume"
 
 
 def test_build_resolume_output_path_uses_safe_suffix(tmp_path: Path) -> None:
     input_path = tmp_path / "asset.jpg"
 
     assert build_resolume_output_path(input_path, tmp_path) == tmp_path / "asset_resolume.png"
+
+
+def test_build_alpha_output_path_uses_shirt_print_suffix(tmp_path: Path) -> None:
+    input_path = tmp_path / "asset.jpg"
+
+    assert build_alpha_output_path(input_path, tmp_path, target="shirt_print") == tmp_path / "asset_shirt_print.png"
 
 
 def test_build_resolume_output_path_avoids_overwrite(tmp_path: Path) -> None:
@@ -61,6 +94,8 @@ def test_export_resolume_image_requires_background_removal(tmp_path: Path, monke
             feather_radius=0,
             alpha_gamma=options.alpha_gamma,
             despill_strength=0,
+            trim_to_alpha=options.trim_to_alpha,
+            padding=options.padding,
             fit_mode=options.fit_mode,
             canvas_width=options.canvas_width,
             canvas_height=options.canvas_height,
@@ -100,6 +135,33 @@ def test_export_resolume_image_writes_valid_background_removed_png(
         assert image.format == "PNG"
         assert image.size == RESOLUME_CANVAS_SIZE
         assert image.convert("RGBA").getchannel("A").getextrema()[0] < 255
+
+
+def test_export_alpha_image_writes_trimmed_shirt_print_png(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    input_path = tmp_path / "asset.png"
+    output_dir = tmp_path / "out"
+    _write_image(input_path, size=(100, 80))
+    monkeypatch.setattr(
+        "resolume_alpha_tool.core.alpha_processor._remove_background_with_rembg",
+        _fake_removed_background,
+    )
+
+    result = export_alpha_image(input_path, output_dir, target="shirt-print")
+
+    assert result.output_path == (output_dir / "asset_shirt_print.png").resolve()
+    assert result.background_removed is True
+    assert result.width < 1920
+    assert result.height < 1080
+    with Image.open(result.output_path) as image:
+        assert image.format == "PNG"
+        assert image.convert("RGBA").getchannel("A").getextrema()[0] < 255
+
+
+def test_processing_options_for_target_returns_print_profile() -> None:
+    assert processing_options_for_target("shirt-print") == shirt_print_processing_options()
 
 
 def test_export_resolume_image_rejects_fully_opaque_background_output(
