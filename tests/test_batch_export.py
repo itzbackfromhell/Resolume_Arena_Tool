@@ -11,6 +11,7 @@ from resolume_alpha_tool.core.batch_export import (
 
 
 def _write_image(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
     mode = "RGB" if path.suffix.lower() in {".jpg", ".jpeg"} else "RGBA"
     Image.new(mode, (8, 8), (255, 255, 255, 255)).save(path)
 
@@ -28,6 +29,18 @@ def test_discover_images_returns_supported_files_only(tmp_path: Path) -> None:
     (tmp_path / "notes.txt").write_text("nope")
 
     assert [path.name for path in discover_images(tmp_path)] == ["a.jpg", "b.png"]
+
+
+def test_discover_images_recursive_uses_relative_path_order(tmp_path: Path) -> None:
+    _write_image(tmp_path / "z.png")
+    _write_image(tmp_path / "sub" / "a.png")
+    _write_image(tmp_path / "sub" / "b.png")
+
+    assert [path.relative_to(tmp_path).as_posix() for path in discover_images(tmp_path, recursive=True)] == [
+        "sub/a.png",
+        "sub/b.png",
+        "z.png",
+    ]
 
 
 def test_normalize_batch_targets_keeps_order_and_uniqueness() -> None:
