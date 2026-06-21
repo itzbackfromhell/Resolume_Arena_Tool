@@ -65,6 +65,23 @@ DARK_THEME = {
 }
 DARK_CHECKER_BASE = (0, 0, 0, 255)
 DARK_CHECKER_ALT = (5, 18, 5, 255)
+WINDOWS_GA_ROOT = 2
+WINDOWS_DWMWA_BORDER_COLOR = 34
+WINDOWS_DWMWA_CAPTION_COLOR = 35
+WINDOWS_DWMWA_TEXT_COLOR = 36
+WINDOWS_DARK_MODE_ATTRIBUTES = (20, 19)
+
+
+def _hex_to_windows_colorref(hex_color: str) -> int:
+    """Convert #RRGGBB to Windows COLORREF 0x00bbggrr."""
+
+    value = hex_color.removeprefix("#")
+    if len(value) != 6:
+        raise ValueError(f"Expected #RRGGBB color, got {hex_color!r}")
+    red = int(value[0:2], 16)
+    green = int(value[2:4], 16)
+    blue = int(value[4:6], 16)
+    return red | (green << 8) | (blue << 16)
 
 
 class AlphaDropperApp(tk.Tk):
@@ -77,6 +94,8 @@ class AlphaDropperApp(tk.Tk):
         self.minsize(800, 620)
         self._apply_dark_theme()
         self.after(0, self._apply_windows_dark_titlebar)
+        self.after(250, self._apply_windows_dark_titlebar)
+        self.bind("<Map>", lambda _event: self.after(50, self._apply_windows_dark_titlebar), add="+")
 
         self.settings = load_json_object(settings_path())
         if isinstance(self.settings.get("window_geometry"), str):
@@ -109,29 +128,65 @@ class AlphaDropperApp(tk.Tk):
         self.protocol("WM_DELETE_WINDOW", self._on_close)
         self.after(100, self._drain_messages)
 
+    def _windows_hwnd_candidates(self) -> list[int]:
+        """Return likely Tk top-level HWNDs for native Windows DWM styling."""
+
+        if not sys.platform.startswith("win"):
+            return []
+
+        handles: list[int] = []
+        with contextlib.suppress(AttributeError, OSError, tk.TclError):
+            raw_hwnd = int(self.winfo_id())
+            handles.append(raw_hwnd)
+
+            user32 = ctypes.windll.user32
+            for candidate in (
+                user32.GetParent(raw_hwnd),
+                user32.GetAncestor(raw_hwnd, WINDOWS_GA_ROOT),
+            ):
+                candidate_int = int(candidate)
+                if candidate_int:
+                    handles.append(candidate_int)
+
+        unique_handles: list[int] = []
+        for hwnd in handles:
+            if hwnd and hwnd not in unique_handles:
+                unique_handles.append(hwnd)
+        return unique_handles
+
+    def _set_windows_dwm_attribute(self, hwnd: int, attribute: int, value: int) -> bool:
+        """Set one integer DWM attribute on one HWND."""
+
+        with contextlib.suppress(AttributeError, OSError):
+            payload = ctypes.c_int(value)
+            result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
+                ctypes.c_void_p(hwnd),
+                ctypes.c_int(attribute),
+                ctypes.byref(payload),
+                ctypes.c_int(ctypes.sizeof(payload)),
+            )
+            return result == 0
+        return False
+
     def _apply_windows_dark_titlebar(self) -> None:
-        """Ask Windows DWM to use the dark native title bar when available."""
+        """Ask Windows DWM to use a black native title bar when available."""
 
         if not sys.platform.startswith("win"):
             return
 
-        with contextlib.suppress(AttributeError, OSError, tk.TclError):
+        with contextlib.suppress(tk.TclError):
             self.update_idletasks()
-            hwnd = ctypes.c_void_p(self.winfo_id())
-            enabled = ctypes.c_int(1)
-            enabled_size = ctypes.c_int(ctypes.sizeof(enabled))
 
-            # 20 is DWMWA_USE_IMMERSIVE_DARK_MODE on current Windows builds.
-            # 19 is the older compatibility attribute used by some Windows 10 builds.
-            for attribute in (20, 19):
-                result = ctypes.windll.dwmapi.DwmSetWindowAttribute(
-                    hwnd,
-                    ctypes.c_int(attribute),
-                    ctypes.byref(enabled),
-                    enabled_size,
-                )
-                if result == 0:
-                    break
+        caption_color = _hex_to_windows_colorref(DARK_THEME["background"])
+        text_color = _hex_to_windows_colorref(DARK_THEME["heading"])
+        border_color = _hex_to_windows_colorref(DARK_THEME["border"])
+
+        for hwnd in self._windows_hwnd_candidates():
+            for attribute in WINDOWS_DARK_MODE_ATTRIBUTES:
+                self._set_windows_dwm_attribute(hwnd, attribute, 1)
+            self._set_windows_dwm_attribute(hwnd, WINDOWS_DWMWA_CAPTION_COLOR, caption_color)
+            self._set_windows_dwm_attribute(hwnd, WINDOWS_DWMWA_TEXT_COLOR, text_color)
+            self._set_windows_dwm_attribute(hwnd, WINDOWS_DWMWA_BORDER_COLOR, border_color)
 
     def _apply_dark_theme(self) -> None:
         """Apply a black/neon ttk theme across the focused desktop UI."""
