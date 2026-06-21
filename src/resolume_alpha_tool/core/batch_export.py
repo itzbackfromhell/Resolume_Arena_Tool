@@ -22,6 +22,7 @@ class BatchExportRequest:
     targets: tuple[ExportTarget, ...] = ("resolume",)
     model: str = DEFAULT_REMBG_MODEL
     recursive: bool = False
+    report_path: Path | None = None
     options_by_target: dict[ExportTarget, ProcessingOptions] = field(default_factory=dict)
 
 
@@ -46,6 +47,7 @@ class BatchExportSummary:
     input_dir: Path
     output_dir: Path
     items: tuple[BatchExportItem, ...] = field(default_factory=tuple)
+    report_path: Path | None = None
 
     @property
     def exported_count(self) -> int:
@@ -146,8 +148,16 @@ def export_batch(
                 if on_progress:
                     on_progress(f"Failed {source_label} ({target}): {exc}")
 
-    return BatchExportSummary(
+    summary = BatchExportSummary(
         input_dir=request.input_dir,
         output_dir=request.output_dir,
         items=tuple(items),
+        report_path=request.report_path,
     )
+    if request.report_path:
+        from .reporting import write_batch_report
+
+        written = write_batch_report(summary, request.report_path)
+        if on_progress:
+            on_progress(f"Wrote batch report: {written}")
+    return summary
