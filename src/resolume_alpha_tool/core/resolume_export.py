@@ -6,12 +6,11 @@ from collections.abc import Callable
 from dataclasses import dataclass, replace
 from pathlib import Path
 
-from PIL import Image
-
 from .alpha_processor import process_file
 from .exceptions import ProcessingError
 from .models import ExportTarget, FitMode, ProcessingOptions, ProcessResult
 from .naming import build_output_path
+from .output_validation import OutputValidationReport, validate_output_file
 from .validation import ensure_file
 
 ProgressCallback = Callable[[str], None]
@@ -173,6 +172,17 @@ def build_resolume_output_path(
     return build_alpha_output_path(input_path, output_dir, options, target="resolume")
 
 
+def build_output_validation_report(
+    result: ProcessResult,
+    options: ProcessingOptions,
+    *,
+    target: ExportTarget,
+) -> OutputValidationReport:
+    """Return Output Validation 2.0 diagnostics for a saved export."""
+
+    return validate_output_file(result, options, target=target)
+
+
 def validate_alpha_output(
     result: ProcessResult,
     options: ProcessingOptions,
@@ -181,44 +191,7 @@ def validate_alpha_output(
 ) -> None:
     """Validate that the saved file is a real background-removed transparent PNG."""
 
-    if not options.remove_background or not result.background_removed:
-        raise ProcessingError("Export must remove the background; refusing non-rembg output.")
-    if options.output_format != RESOLUME_OUTPUT_FORMAT:
-        raise ProcessingError(f"Export must be PNG, got: {options.output_format}")
-    if result.output_path.suffix.lower() != ".png":
-        raise ProcessingError(f"Export must write a .png file, got: {result.output_path.name}")
-    if target == "resolume" and options.canvas_width and options.canvas_height:
-        expected_size = (options.canvas_width, options.canvas_height)
-        if (result.width, result.height) != expected_size:
-            raise ProcessingError(
-                f"Resolume export must be {expected_size[0]}x{expected_size[1]}, "
-                f"got {result.width}x{result.height}."
-            )
-
-    try:
-        with Image.open(result.output_path) as image:
-            if image.format != "PNG":
-                raise ProcessingError(f"Export wrote a non-PNG file: {image.format}")
-            if target == "resolume" and options.canvas_width and options.canvas_height:
-                expected_size = (options.canvas_width, options.canvas_height)
-                if image.size != expected_size:
-                    raise ProcessingError(f"Saved PNG has wrong size: {image.size}")
-            rgba = image.convert("RGBA")
-            alpha_min, alpha_max = rgba.getchannel("A").getextrema()
-    except ProcessingError:
-        raise
-    except Exception as exc:
-        raise ProcessingError(
-            f"Could not validate exported PNG: {result.output_path}. Original error: {exc}"
-        ) from exc
-
-    if alpha_max == 0:
-        raise ProcessingError("Background removal produced a fully transparent image; refusing empty output.")
-    if alpha_min == 255:
-        raise ProcessingError(
-            "Background removal produced a fully opaque PNG. "
-            "Refusing output because no transparent background was detected."
-        )
+    validate_output_file(result, options, target=target)
 
 
 def validate_resolume_output(result: ProcessResult, options: ProcessingOptions) -> None:
@@ -250,12 +223,13 @@ def export_alpha_image(
         on_progress(f"Removing background from {source.name} for {label}")
     result = process_file(source, output_path, export_options)
     try:
-        validate_alpha_output(result, export_options, target=export_target)
+        report = build_output_validation_report(result, export_options, target=export_target)
     except ProcessingError:
         result.output_path.unlink(missing_ok=True)
         raise
     if on_progress:
-        on_progress(f"Saved background-removed PNG: {result.output_path.name}")
+        warning_note = f" ({len(report.warnings)} warning(s))" if report.warnings else ""
+        on_progress(f"Saved background-removed PNG: {result.output_path.name}{warning_note}")
     return result
 
 
