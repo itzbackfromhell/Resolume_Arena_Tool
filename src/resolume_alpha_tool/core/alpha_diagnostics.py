@@ -59,6 +59,16 @@ def _alpha_warnings(
     return tuple(warnings)
 
 
+def _visible_alpha_percent(alpha: Image.Image) -> float:
+    """Return visible alpha coverage using Pillow's C-backed histogram path."""
+
+    histogram = alpha.histogram()
+    total_pixels = max(1, alpha.width * alpha.height)
+    transparent_pixels = histogram[0] if histogram else 0
+    visible_pixels = total_pixels - transparent_pixels
+    return (visible_pixels / total_pixels) * 100.0
+
+
 def analyze_alpha_image_object(image: Image.Image) -> AlphaDiagnostics:
     """Return alpha diagnostics for an already opened image."""
 
@@ -67,9 +77,7 @@ def analyze_alpha_image_object(image: Image.Image) -> AlphaDiagnostics:
     alpha = rgba.getchannel("A")
     alpha_min, alpha_max = alpha.getextrema()
     bbox = alpha.getbbox()
-    total_pixels = max(1, rgba.width * rgba.height)
-    visible_pixels = sum(1 for value in alpha.getdata() if value > 0)
-    visible_percent = (visible_pixels / total_pixels) * 100.0
+    visible_percent = _visible_alpha_percent(alpha)
     warnings = _alpha_warnings(
         has_alpha=has_alpha,
         alpha_min=alpha_min,
