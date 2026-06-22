@@ -207,6 +207,7 @@ def cmd_rembg_check(args: argparse.Namespace) -> int:
         print(rembg_healthcheck(args.model))
     except Exception as exc:
         LOGGER.exception("rembg healthcheck failed")
+        print(f"rembg check failed: {exc}")
         user_error = build_user_error(exc)
         print(user_error.as_cli_text(verbose=bool(args.verbose)), file=sys.stderr)
         return 1
