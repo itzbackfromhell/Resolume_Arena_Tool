@@ -17,6 +17,10 @@ GUI / CLI
     -> folder discovery
     -> per-file failure collection
     -> optional JSON report via core/reporting.py
+  -> core/gui_worker.py
+    -> typed GUI worker messages
+    -> worker success/error/finished lifecycle
+    -> user-facing GUI error payload normalization
 ```
 
 ## Design rules
@@ -28,6 +32,7 @@ GUI / CLI
 - Resolume integration remains file-based and conservative: export assets safely, do not mutate Resolume projects.
 - CLI and GUI must share the same processing contracts whenever possible.
 - Batch jobs must be deterministic, reportable, and safe against partial failures.
+- Worker threads must communicate with Tk only through queue-safe message payloads.
 
 ## Main components
 
@@ -81,6 +86,16 @@ Responsible for:
 
 Responsible for stable JSON payloads for batch summaries. These reports are intended for QA, handoff, and future release/export automation.
 
+### `gui_worker.py`
+
+Small worker-message contract used to keep GUI background work predictable:
+
+- `GuiWorkerMessage` dataclass for queue payloads
+- helpers for progress, success, error, and finished messages
+- legacy tuple coercion for gradual migration from older GUI queue code
+- error payload normalization through the shared Error UX formatter
+- tested worker lifecycle without needing real Tk windows or real threads
+
 ### `app.py`
 
 Tkinter desktop app. It selects one input file or batch folder, builds target processing options, and runs export services on a worker thread so the UI does not freeze.
@@ -99,6 +114,7 @@ Professional command layer for:
 ## Next architecture targets
 
 - Split `app.py` into smaller `ui/` modules.
+- Wire `app.py` fully onto `core/gui_worker.py` during the UI module split.
 - Add a first-class settings service shared by CLI and GUI.
 - Add named Resolume workflow profiles.
 - Add structured release automation.
