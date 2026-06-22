@@ -10,7 +10,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Literal, Protocol, TypeVar
+from typing import Any, Literal, Protocol, TypeVar, cast
 
 from .error_ux import UserFacingError, build_user_error
 
@@ -21,6 +21,15 @@ GuiWorkerMessageKind = Literal[
     "export_error",
     "export_finished",
 ]
+VALID_GUI_WORKER_MESSAGE_KINDS: frozenset[str] = frozenset(
+    {
+        "progress",
+        "export_success",
+        "batch_success",
+        "export_error",
+        "export_finished",
+    }
+)
 
 T = TypeVar("T")
 
@@ -75,16 +84,8 @@ def coerce_worker_message(item: object) -> GuiWorkerMessage | None:
         return item
     if isinstance(item, tuple) and len(item) == 2:
         kind, payload = item
-        if kind in GuiWorkerMessage.__annotations__.get("kind", ()):
-            return GuiWorkerMessage(kind, payload)
-        if isinstance(kind, str) and kind in {
-            "progress",
-            "export_success",
-            "batch_success",
-            "export_error",
-            "export_finished",
-        }:
-            return GuiWorkerMessage(kind, payload)
+        if isinstance(kind, str) and kind in VALID_GUI_WORKER_MESSAGE_KINDS:
+            return GuiWorkerMessage(cast(GuiWorkerMessageKind, kind), payload)
     return None
 
 
