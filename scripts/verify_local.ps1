@@ -42,6 +42,9 @@ Invoke-Checked "Install project extras" { python -m pip install -e ".[dev,rembg]
 Invoke-Checked "Compile sources" { python -m compileall -q src tests }
 Invoke-Checked "Run ruff" { python -m ruff check . }
 Invoke-Checked "Run tests" { python -m pytest }
+Invoke-Checked "Import private workflow modules" {
+    python -c "from resolume_alpha_tool.core import preview_tools, workflow_structure; print(preview_tools.PREVIEW_BACKGROUNDS); print(workflow_structure.target_folder_name('shirt_print'))"
+}
 Invoke-Checked "Check rembg backend" { python -m resolume_alpha_tool.cli rembg-check }
 
 if ($LaunchApp) {
