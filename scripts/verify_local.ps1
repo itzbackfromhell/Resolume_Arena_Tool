@@ -43,7 +43,7 @@ Invoke-Checked "Compile sources" { python -m compileall -q src tests }
 Invoke-Checked "Run ruff" { python -m ruff check . }
 Invoke-Checked "Run tests" { python -m pytest }
 Invoke-Checked "Import private workflow modules" {
-    python -c "from resolume_alpha_tool.core import preview_tools, profile_store, workflow_config, workflow_structure; print(preview_tools.PREVIEW_BACKGROUNDS); print(workflow_structure.target_folder_name('shirt_print')); print(len(profile_store.load_available_profiles())); print(workflow_config.resolve_workflow_config.__name__)"
+    python -c "from resolume_alpha_tool.core import preview_tools, profile_store, workflow_config, workflow_structure; from resolume_alpha_tool.ui import labels; print(preview_tools.PREVIEW_BACKGROUNDS); print(workflow_structure.target_folder_name('shirt_print')); print(len(profile_store.load_available_profiles())); print(workflow_config.resolve_workflow_config.__name__); print(labels.preview_mode_keys())"
 }
 Invoke-Checked "Check rembg backend" { python -m resolume_alpha_tool.cli rembg-check }
 
