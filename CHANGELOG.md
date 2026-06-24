@@ -8,13 +8,15 @@
 - Added project logging configuration with a per-user log file.
 - Added CLI `--verbose` and `--no-log-file` runtime flags on commands.
 - Added GUI worker message contract helpers for progress, success, error, and finished states.
-- Added focused tests for error UX, logging configuration, and GUI worker lifecycle behavior.
+- Added typed core settings service with sanitized `AppSettings` and legacy config-path compatibility.
+- Added focused tests for error UX, logging configuration, GUI worker lifecycle behavior, and settings sanitation.
 
 ### Changed
 
 - CLI failures now keep the legacy `ERROR: ...` prefix while also printing a recovery hint.
 - CLI export, batch, validation, and rembg-check flows now write structured package logs.
 - GUI worker architecture is now documented as a queue-safe migration layer before the `app.py` UI split.
+- `gui_settings.py` now stays as a compatibility wrapper over the first-class settings service.
 
 ## 0.2.0
 
