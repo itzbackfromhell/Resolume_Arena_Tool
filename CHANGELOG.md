@@ -9,7 +9,8 @@
 - Added CLI `--verbose` and `--no-log-file` runtime flags on commands.
 - Added GUI worker message contract helpers for progress, success, error, and finished states.
 - Added typed core settings service with sanitized `AppSettings` and legacy config-path compatibility.
-- Added focused tests for error UX, logging configuration, GUI worker lifecycle behavior, and settings sanitation.
+- Added named workflow profiles for Resolume 1080p, Resolume 4K, Resolume Square 1080, and Shirt/Print Clean exports.
+- Added focused tests for error UX, logging configuration, GUI worker lifecycle behavior, settings sanitation, and workflow profiles.
 
 ### Changed
 
