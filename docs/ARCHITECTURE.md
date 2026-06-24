@@ -25,6 +25,10 @@ GUI / CLI
     -> typed AppSettings
     -> config paths and legacy migration compatibility
     -> JSON roundtrip and value sanitizing
+  -> core/profiles.py
+    -> named Resolume/print workflow profiles
+    -> profile aliases and JSON normalization
+    -> conversion into ProcessingOptions
 ```
 
 ## Design rules
@@ -38,6 +42,7 @@ GUI / CLI
 - Batch jobs must be deterministic, reportable, and safe against partial failures.
 - Worker threads must communicate with Tk only through queue-safe message payloads.
 - Settings must be sanitized before they affect export behavior.
+- Workflow profiles must stay thin presets over existing export contracts, not separate image pipelines.
 
 ## Main components
 
@@ -111,6 +116,16 @@ First-class app settings service:
 - sanitizer for target, preset, fit, preview, edge, padding, and boolean values
 - compatibility wrapper kept in `gui_settings.py` for the current Tk app
 
+### `profiles.py`
+
+Named workflow profile service for repeatable exports:
+
+- built-in profiles for Resolume 1080p, Resolume 4K, Resolume Square 1080, and Shirt/Print Clean
+- alias resolution for common terms like `resolume`, `4k`, `square`, and `shirt`
+- JSON-object normalization for future user-defined profiles
+- user-profile merge helper that allows key-based overrides
+- conversion from profile settings into the existing `ProcessingOptions` contract
+
 ### `app.py`
 
 Tkinter desktop app. It selects one input file or batch folder, builds target processing options, and runs export services on a worker thread so the UI does not freeze.
@@ -131,6 +146,6 @@ Professional command layer for:
 - Split `app.py` into smaller `ui/` modules.
 - Wire `app.py` fully onto `core/gui_worker.py` during the UI module split.
 - Migrate `app.py` from raw settings dictionaries to typed `AppSettings`.
-- Add named Resolume workflow profiles.
+- Expose named workflow profiles in CLI and GUI flows.
 - Add structured release automation.
 - Expand preview pro tools without moving image algorithms into the UI.
