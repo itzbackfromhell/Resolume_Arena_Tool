@@ -21,6 +21,10 @@ GUI / CLI
     -> typed GUI worker messages
     -> worker success/error/finished lifecycle
     -> user-facing GUI error payload normalization
+  -> core/settings.py
+    -> typed AppSettings
+    -> config paths and legacy migration compatibility
+    -> JSON roundtrip and value sanitizing
 ```
 
 ## Design rules
@@ -33,6 +37,7 @@ GUI / CLI
 - CLI and GUI must share the same processing contracts whenever possible.
 - Batch jobs must be deterministic, reportable, and safe against partial failures.
 - Worker threads must communicate with Tk only through queue-safe message payloads.
+- Settings must be sanitized before they affect export behavior.
 
 ## Main components
 
@@ -96,6 +101,16 @@ Small worker-message contract used to keep GUI background work predictable:
 - error payload normalization through the shared Error UX formatter
 - tested worker lifecycle without needing real Tk windows or real threads
 
+### `settings.py`
+
+First-class app settings service:
+
+- `AppSettings` dataclass with stable UI-facing keys
+- config directory resolution with legacy app-folder compatibility
+- JSON object load/save helpers
+- sanitizer for target, preset, fit, preview, edge, padding, and boolean values
+- compatibility wrapper kept in `gui_settings.py` for the current Tk app
+
 ### `app.py`
 
 Tkinter desktop app. It selects one input file or batch folder, builds target processing options, and runs export services on a worker thread so the UI does not freeze.
@@ -115,7 +130,7 @@ Professional command layer for:
 
 - Split `app.py` into smaller `ui/` modules.
 - Wire `app.py` fully onto `core/gui_worker.py` during the UI module split.
-- Add a first-class settings service shared by CLI and GUI.
+- Migrate `app.py` from raw settings dictionaries to typed `AppSettings`.
 - Add named Resolume workflow profiles.
 - Add structured release automation.
 - Expand preview pro tools without moving image algorithms into the UI.
