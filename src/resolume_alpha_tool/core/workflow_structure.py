@@ -22,7 +22,7 @@ class WorkflowExportLayout:
     manifests_dir: Path
     previews_dir: Path
 
-    def ensure(self) -> "WorkflowExportLayout":
+    def ensure(self) -> WorkflowExportLayout:
         """Create all layout directories and return this layout."""
 
         for path in (self.assets_dir, self.reports_dir, self.manifests_dir, self.previews_dir):
