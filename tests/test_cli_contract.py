@@ -5,7 +5,7 @@ def test_cli_exposes_focused_professional_commands() -> None:
     parser = build_parser()
     subparsers = next(action for action in parser._actions if action.dest == "command")
 
-    assert set(subparsers.choices) == {"batch", "convert", "profiles", "remove", "validate", "rembg-check", "version"}
+    assert set(subparsers.choices) == {"batch", "convert", "remove", "validate", "rembg-check", "version"}
 
 
 def test_convert_command_uses_single_export_service(monkeypatch, tmp_path, capsys) -> None:  # type: ignore[no-untyped-def]
